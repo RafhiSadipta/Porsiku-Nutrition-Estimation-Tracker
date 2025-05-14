@@ -18,6 +18,9 @@ func SetupRoutes() *gin.Engine {
 	r.GET("/api/user/:id", controllers.GetUserById)
 	r.GET("/api/daily_target", controllers.GetDailyTarget)
 	r.GET("/api/daily_target/:id", controllers.GetDailyTargetByUserId)
+	r.POST("/api/detect_food", controllers.DetectFoodHandler)
+	r.POST("/api/nutri-estimation", controllers.CalculateNutritionHandler)
+	r.POST("/api/konsumsi", controllers.SaveKonsumsi)
 
 	return r
 }

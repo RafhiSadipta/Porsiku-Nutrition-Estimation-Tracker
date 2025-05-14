@@ -15,6 +15,8 @@ func main() {
 		&models.Users{},
 		&models.Estimasi{},
 		&models.DailyTarget{},
+		&models.Konsumsi{},
+		&models.NutritionItem{},
 	)
 	if err != nil {
 		log.Fatal("Gagal AutoMigrate:", err)
