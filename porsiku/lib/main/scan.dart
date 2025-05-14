@@ -293,18 +293,3 @@ class _ScanPageState extends State<ScanPage> {
     );
   }
 }
-
-// Tambahkan CustomClipper untuk area clear viewfinder
-class _ViewfinderClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    final center = Offset(size.width / 2, size.height / 2);
-    final rect = Rect.fromCenter(center: center, width: 260, height: 260);
-    path.addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(24)));
-    return path..fillType = PathFillType.evenOdd;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
