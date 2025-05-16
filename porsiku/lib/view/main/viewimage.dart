@@ -5,7 +5,7 @@ import 'package:gal/gal.dart';
 
 class ViewImagePage extends StatelessWidget {
   final String imagePath;
-  const ViewImagePage({Key? key, required this.imagePath}) : super(key: key);
+  const ViewImagePage({super.key, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {

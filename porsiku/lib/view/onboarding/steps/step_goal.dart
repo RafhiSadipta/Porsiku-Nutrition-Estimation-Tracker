@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:porsiku/components/title.dart';
 
 class StepGoal extends StatelessWidget {
   final String? selectedGoal;
@@ -7,47 +8,38 @@ class StepGoal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 24),
-        const Text(
-          'Apa tujuan utamamu?',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 24),
+          TitleText(text: 'Apa tujuan utamamu?'),
+          const SizedBox(height: 8),
+          SubtitleText(text: 'Apa yang memotivasimu menggunakan PorsiKu?'),
+          const SizedBox(height: 32),
+          GoalOption(
+            icon: Icons.local_fire_department,
+            label: 'Menurunkan berat badan',
+            selected: selectedGoal == 'cutting',
+            onTap: () => onGoalSelected('cutting'),
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Apa yang memotivasimu menggunakan PorsiKu?',
-          style: TextStyle(fontSize: 15, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-        GoalOption(
-          icon: Icons.local_fire_department,
-          label: 'Menurunkan berat badan',
-          selected: selectedGoal == 'lose',
-          onTap: () => onGoalSelected('lose'),
-        ),
-        const SizedBox(height: 16),
-        GoalOption(
-          icon: Icons.fitness_center,
-          label: 'Menaikkan berat badan',
-          selected: selectedGoal == 'gain',
-          onTap: () => onGoalSelected('gain'),
-        ),
-        const SizedBox(height: 16),
-        GoalOption(
-          icon: Icons.emoji_emotions,
-          label: 'Menjaga kondisi tubuh',
-          selected: selectedGoal == 'maintain',
-          onTap: () => onGoalSelected('maintain'),
-        ),
-      ],
+          const SizedBox(height: 16),
+          GoalOption(
+            icon: Icons.fitness_center,
+            label: 'Menaikkan berat badan',
+            selected: selectedGoal == 'bulking',
+            onTap: () => onGoalSelected('bulking'),
+          ),
+          const SizedBox(height: 16),
+          GoalOption(
+            icon: Icons.emoji_emotions,
+            label: 'Menjaga kondisi tubuh',
+            selected: selectedGoal == 'maintain',
+            onTap: () => onGoalSelected('maintain'),
+          ),
+        ],
+      ),
     );
   }
 }

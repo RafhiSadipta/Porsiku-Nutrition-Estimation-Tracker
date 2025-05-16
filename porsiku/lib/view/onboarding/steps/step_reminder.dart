@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:porsiku/components/title.dart';
 
 class StepReminder extends StatelessWidget {
   final List<String> selectedMeals;
@@ -31,39 +32,40 @@ class StepReminder extends StatelessWidget {
         'value': 'dinner',
       },
     ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 24),
-        const Text(
-          'Pengingat waktu makan harian',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 24),
+          const Text(
+            'Pengingat waktu makan harian',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Pilih waktu makan yang ingin kamu dapat pengingatnya.',
-          style: TextStyle(fontSize: 15, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-        ...meals.map(
-          (meal) => Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: ReminderMealOption(
-              icon: meal['icon'] as IconData,
-              label: meal['label'] as String,
-              time: meal['time'] as String,
-              selected: selectedMeals.contains(meal['value']),
-              onTap: () => onMealTap(meal['value'] as String),
+          const SizedBox(height: 8),
+          TitleText(text: 'Mau diingatkan makan apa saja?'),
+          const SizedBox(height: 8),
+          SubtitleText(text: 'Pilih waktu makan yang ingin diingatkan'),
+          const SizedBox(height: 32),
+          ...meals.map(
+            (meal) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: ReminderMealOption(
+                icon: meal['icon'] as IconData,
+                label: meal['label'] as String,
+                time: meal['time'] as String,
+                selected: selectedMeals.contains(meal['value']),
+                onTap: () => onMealTap(meal['value'] as String),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

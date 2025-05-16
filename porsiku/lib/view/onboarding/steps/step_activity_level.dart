@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:porsiku/components/title.dart';
+import 'package:porsiku/constants/constants.dart';
 
 class StepActivityLevel extends StatelessWidget {
   final String? selectedLevel;
@@ -43,39 +45,30 @@ class StepActivityLevel extends StatelessWidget {
         'value': 'very_active',
       },
     ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 24),
-        const Text(
-          'Seberapa aktif kamu sehari-hari?',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Aktivitas fisik memengaruhi kebutuhan kalori harianmu.',
-          style: TextStyle(fontSize: 15, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-        ...levels.map(
-          (level) => Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: ActivityLevelOption(
-              icon: level['icon'] as IconData,
-              label: level['label'] as String,
-              desc: level['desc'] as String,
-              selected: selectedLevel == level['value'],
-              onTap: () => onLevelSelected(level['value'] as String),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 32),
+          TitleText(text: 'Seberapa aktif kamu?'),
+          const SizedBox(height: 4),
+          SubtitleText(text: 'Pilih tingkat aktivitas harianmu'),
+          const SizedBox(height: 32),
+          ...levels.map(
+            (level) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ActivityLevelOption(
+                icon: level['icon'] as IconData,
+                label: level['label'] as String,
+                desc: level['desc'] as String,
+                selected: selectedLevel == level['value'],
+                onTap: () => onLevelSelected(level['value'] as String),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -101,10 +94,10 @@ class ActivityLevelOption extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         decoration: BoxDecoration(
           color: selected ? Colors.black12 : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppBorderRadius.md),
           border: Border.all(color: Colors.black12),
         ),
         child: Row(

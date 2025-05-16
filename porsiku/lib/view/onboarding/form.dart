@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:porsiku/view/authentication/auth_start.dart';
 import 'steps/step_intro.dart';
 import 'steps/step_gender.dart';
 import 'steps/step_age.dart';
@@ -10,6 +11,9 @@ import 'steps/step_goal_pace.dart';
 import 'steps/step_activity_level.dart';
 import 'steps/step_reminder.dart';
 import 'steps/step_ready.dart';
+import '../../components/primary_button.dart';
+import '../../components/back_button.dart';
+import '../../components/progressbar.dart';
 
 class OnboardingFormPage extends StatefulWidget {
   const OnboardingFormPage({super.key});
@@ -111,6 +115,31 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
     }
   }
 
+  bool _isStepValid() {
+    switch (step) {
+      case 1:
+        return goal != null;
+      case 2:
+        return gender != null;
+      case 3:
+        return age > 0;
+      case 4:
+        return height > 0;
+      case 5:
+        return weight > 0;
+      case 6:
+        return targetWeight > 0;
+      case 7:
+        return pace.isNotEmpty;
+      case 8:
+        return activityLevel != null;
+      case 9:
+        return reminders.isNotEmpty;
+      default:
+        return true;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,52 +149,34 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
           children: [
             // Top bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    onPressed: prevStep,
-                  ),
-                  Expanded(
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween<double>(begin: 0, end: (step + 1) / 11),
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeInOut,
-                      builder: (context, value, child) {
-                        return LinearProgressIndicator(
-                          value: value,
-                          backgroundColor: Colors.black12,
-                          color: Colors.black87,
-                        );
-                      },
-                    ),
-                  ),
+                  BackButtonCustom(onPressed: prevStep),
+                  SizedBox(width: 16),
+                  Expanded(child: ProgressBarOnboarding(step: step)),
                 ],
               ),
             ),
             Expanded(child: getStepWidget()),
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(24),
               child: SizedBox(
                 width: double.infinity,
-                child:
-                    step == 10
-                        ? const SizedBox.shrink()
-                        : ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: nextStep,
-                          child: const Text(
-                            'Next',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
+                child: PrimaryButton(
+                  text: step == 10 ? "Let's Get Started" : 'Next',
+                  isActive: step == 10 ? true : _isStepValid(),
+                  onPressed:
+                      step == 10
+                          ? () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const AuthStartPage(),
+                              ),
+                            );
+                          }
+                          : (_isStepValid() ? nextStep : null),
+                ),
               ),
             ),
           ],

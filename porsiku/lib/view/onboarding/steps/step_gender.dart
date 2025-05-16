@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:porsiku/components/title.dart';
 
 class StepGender extends StatelessWidget {
   final String? selectedGender;
@@ -11,39 +12,32 @@ class StepGender extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Kamu adalah seorang...',
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TitleText(text: 'Apa jenis kelaminmu?'),
+          const SizedBox(height: 4),
+          SubtitleText(
+            text: 'Pilih jenis kelamin yang sesuai dengan identitasmu',
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Kami akan menyesuaikan perhitungan berdasarkan gendermu.',
-          style: const TextStyle(fontSize: 15, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-        GenderOption(
-          icon: Icons.male,
-          label: 'Laki-laki',
-          selected: selectedGender == 'male',
-          onTap: () => onGenderSelected('male'),
-        ),
-        const SizedBox(height: 16),
-        GenderOption(
-          icon: Icons.female,
-          label: 'Perempuan',
-          selected: selectedGender == 'female',
-          onTap: () => onGenderSelected('female'),
-        ),
-      ],
+          const SizedBox(height: 32),
+          GenderOption(
+            icon: Icons.male,
+            label: 'Laki-laki',
+            selected: selectedGender == 'male',
+            onTap: () => onGenderSelected('male'),
+          ),
+          const SizedBox(height: 16),
+          GenderOption(
+            icon: Icons.female,
+            label: 'Perempuan',
+            selected: selectedGender == 'female',
+            onTap: () => onGenderSelected('female'),
+          ),
+        ],
+      ),
     );
   }
 }
