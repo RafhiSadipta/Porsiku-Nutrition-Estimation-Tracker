@@ -1,10 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+import 'signup.dart';
 import 'package:porsiku/components/input_field.dart';
 import 'package:porsiku/components/primary_button.dart';
-import 'signup.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  bool isLoading = false;
+
+  Future<void> login() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email dan password harus diisi")),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final url = Uri.parse('http://10.0.2.2:8080/api/login');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data['token'];
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Login berhasil!")));
+
+        // TODO: Simpan token ke SharedPreferences
+
+        // TODO: Navigasi ke halaman utama setelah login berhasil
+        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+
+        print("Login sukses. Token: $token");
+      } else {
+        final error = jsonDecode(response.body)['error'] ?? "Login gagal";
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error)));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Gagal terhubung ke server.")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,15 +110,23 @@ class LoginPage extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  // Email
-                  const InputField(
+
+                  // Email InputField with controller
+                  InputField(
+                    controller: emailController,
                     hintText: 'Email',
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 16),
-                  // Password
-                  const InputField(hintText: 'Password', isPassword: true),
+
+                  // Password InputField with controller
+                  InputField(
+                    controller: passwordController,
+                    hintText: 'Password',
+                    isPassword: true,
+                  ),
                   const SizedBox(height: 8),
+
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
@@ -52,7 +135,7 @@ class LoginPage extends StatelessWidget {
                       },
                       style: TextButton.styleFrom(padding: EdgeInsets.zero),
                       child: const Text(
-                        'Forget your password? Click here',
+                        'Lupa password?',
                         style: TextStyle(
                           color: Colors.black54,
                           decoration: TextDecoration.underline,
@@ -62,18 +145,16 @@ class LoginPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Log In Button
+
                   SizedBox(
                     width: double.infinity,
                     child: PrimaryButton(
-                      text: 'Log In',
-                      onPressed: () {
-                        // TODO: Log in logic
-                      },
+                      text: isLoading ? 'Loading...' : 'Log In',
+                      onPressed: isLoading ? null : login,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Don't have an account
+
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).push(
@@ -83,7 +164,7 @@ class LoginPage extends StatelessWidget {
                       );
                     },
                     child: const Text(
-                      "Don't have an account? Sign Up",
+                      "Belum punya akun? Daftar",
                       style: TextStyle(
                         color: Colors.black54,
                         decoration: TextDecoration.underline,

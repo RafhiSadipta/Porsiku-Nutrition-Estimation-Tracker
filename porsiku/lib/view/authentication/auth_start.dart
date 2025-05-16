@@ -3,6 +3,7 @@ import 'package:porsiku/constants/constants.dart';
 import 'package:porsiku/components/title.dart';
 import 'package:porsiku/components/primary_button.dart';
 import 'package:porsiku/components/secondary_button.dart';
+
 import 'signup.dart';
 import 'login.dart';
 import '../main/scan.dart';
@@ -21,7 +22,7 @@ class AuthStartPage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Cookie Icon
+                // Icon ilustrasi
                 Container(
                   margin: const EdgeInsets.only(bottom: 40),
                   child: Icon(
@@ -30,16 +31,19 @@ class AuthStartPage extends StatelessWidget {
                     color: AppColors.black,
                   ),
                 ),
-                // Title
+
+                // Judul
                 const TitleText(
                   text:
                       'Langkah pertama menuju\nhidup lebih sehat dimulai\ndi sini',
                 ),
                 const SizedBox(height: 8),
-                // Subtitle
+
+                // Subjudul
                 const SubtitleText(text: 'Buat akun baru atau masuk kembali'),
                 const SizedBox(height: 40),
-                // Continue With Email Button
+
+                // Tombol Continue with Email
                 PrimaryButton(
                   text: 'Continue With Email',
                   icon: const Icon(
@@ -49,14 +53,13 @@ class AuthStartPage extends StatelessWidget {
                   ),
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const SignupPage(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const SignupPage()),
                     );
                   },
                 ),
                 const SizedBox(height: 16),
-                // Continue With Google Button
+
+                // Tombol Continue with Google
                 SecondaryButton(
                   text: 'Continue With Google',
                   icon: const Icon(
@@ -65,7 +68,7 @@ class AuthStartPage extends StatelessWidget {
                     size: AppIcons.md,
                   ),
                   onPressed: () {
-                    // TODO: Continue with Google
+                    // TODO: Implementasi autentikasi Google
                   },
                   backgroundColor: AppColors.white,
                   textStyle: const TextStyle(
@@ -75,7 +78,8 @@ class AuthStartPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Log In With Email Button
+
+                // Tombol Login dengan Email
                 SecondaryButton(
                   text: 'Log In With Email',
                   icon: const Icon(
@@ -85,25 +89,24 @@ class AuthStartPage extends StatelessWidget {
                   ),
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
                     );
                   },
                 ),
                 const SizedBox(height: 16),
-                // Scan Button
+
+                // Tombol Scan (opsional, bisa disembunyikan nanti)
                 SecondaryButton(
                   text: 'Scan',
                   icon: const Icon(
-                    Icons.badge_outlined,
+                    Icons.qr_code_scanner,
                     color: AppColors.black,
                     size: AppIcons.md,
                   ),
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const ScanPage()),
-                    );
+                    Navigator.of(
+                      context,
+                    ).push(MaterialPageRoute(builder: (_) => const ScanPage()));
                   },
                 ),
               ],

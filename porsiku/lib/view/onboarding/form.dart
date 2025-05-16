@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:porsiku/view/authentication/auth_start.dart';
+import 'package:porsiku/view/authentication/signup.dart';
 import 'steps/step_intro.dart';
 import 'steps/step_gender.dart';
 import 'steps/step_age.dart';
@@ -44,6 +44,27 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
     if (step > 0) {
       setState(() => step--);
     }
+  }
+
+  /// Saat submit onboarding selesai, arahkan ke SignupPage dengan data dikirim
+  void submitOnboardingData() {
+    final Map<String, dynamic> onboardingData = {
+      'goal': goal,
+      'gender': gender,
+      'age': age,
+      'height': height,
+      'weight': weight,
+      'targetWeight': targetWeight,
+      'pace': pace,
+      'activityLevel': activityLevel,
+      'reminders': reminders,
+    };
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => SignupPage(onboardingData: onboardingData),
+      ),
+    );
   }
 
   Widget getStepWidget() {
@@ -105,11 +126,7 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
           },
         );
       case 10:
-        return StepReady(
-          onGetStarted: () {
-            /* TODO: Implement action */
-          },
-        );
+        return StepReady(onGetStarted: submitOnboardingData);
       default:
         return const SizedBox();
     }
@@ -147,13 +164,14 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar
             Padding(
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
-                  BackButtonCustom(onPressed: prevStep),
-                  SizedBox(width: 16),
+                  if (step > 0) ...[
+                    BackButtonCustom(onPressed: prevStep),
+                    const SizedBox(width: 16),
+                  ],
                   Expanded(child: ProgressBarOnboarding(step: step)),
                 ],
               ),
@@ -168,13 +186,7 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
                   isActive: step == 10 ? true : _isStepValid(),
                   onPressed:
                       step == 10
-                          ? () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const AuthStartPage(),
-                              ),
-                            );
-                          }
+                          ? submitOnboardingData
                           : (_isStepValid() ? nextStep : null),
                 ),
               ),
