@@ -60,22 +60,16 @@ class AuthStartPage extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Tombol Continue with Google
-                SecondaryButton(
+                PrimaryButton(
                   text: 'Continue With Google',
                   icon: const Icon(
                     Icons.g_mobiledata,
-                    color: AppColors.black,
+                    color: AppColors.white,
                     size: AppIcons.md,
                   ),
                   onPressed: () {
                     // TODO: Implementasi autentikasi Google
                   },
-                  backgroundColor: AppColors.white,
-                  textStyle: const TextStyle(
-                    fontSize: AppTexts.md,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.black,
-                  ),
                 ),
                 const SizedBox(height: 16),
 

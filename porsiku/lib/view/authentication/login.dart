@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:porsiku/constants/constants.dart';
 import 'dart:convert';
 
 import 'signup.dart';
@@ -97,16 +98,19 @@ class _LoginPageState extends State<LoginPage> {
                   const Text(
                     'Log In',
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: AppTexts.xl,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: AppColors.black,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     'Masuk untuk melanjutkan perjalananmu\nbersama PorsiKu.',
-                    style: TextStyle(fontSize: 15, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: AppTexts.md,
+                      color: AppColors.grey,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
@@ -137,9 +141,9 @@ class _LoginPageState extends State<LoginPage> {
                       child: const Text(
                         'Lupa password?',
                         style: TextStyle(
-                          color: Colors.black54,
+                          color: AppColors.grey,
                           decoration: TextDecoration.underline,
-                          fontSize: 14,
+                          fontSize: AppTexts.md,
                         ),
                       ),
                     ),
@@ -166,9 +170,9 @@ class _LoginPageState extends State<LoginPage> {
                     child: const Text(
                       "Belum punya akun? Daftar",
                       style: TextStyle(
-                        color: Colors.black54,
+                        color: AppColors.grey,
                         decoration: TextDecoration.underline,
-                        fontSize: 15,
+                        fontSize: AppTexts.md,
                       ),
                     ),
                   ),

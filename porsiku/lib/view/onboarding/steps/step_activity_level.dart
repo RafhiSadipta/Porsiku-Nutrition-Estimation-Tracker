@@ -18,31 +18,31 @@ class StepActivityLevel extends StatelessWidget {
         'label': 'Sangat Ringan',
         'desc': 'Jarang bergerak/olahraga',
         'icon': Icons.self_improvement,
-        'value': 'very_light',
+        'value': 'sangat_ringan',
       },
       {
         'label': 'Ringan',
         'desc': 'Olahraga ringan 1–3x/minggu',
         'icon': Icons.directions_walk,
-        'value': 'light',
+        'value': 'ringan',
       },
       {
         'label': 'Sedang',
         'desc': 'Olahraga sedang 3–5x/minggu',
         'icon': Icons.directions_run,
-        'value': 'moderate',
+        'value': 'sedang',
       },
       {
         'label': 'Aktif',
         'desc': 'Olahraga intens 6–7x/minggu',
         'icon': Icons.fitness_center,
-        'value': 'active',
+        'value': 'aktif',
       },
       {
         'label': 'Sangat Aktif',
         'desc': 'Aktivitas fisik berat/2x olahraga per hari',
         'icon': Icons.sports_mma,
-        'value': 'very_active',
+        'value': 'sangat_aktif',
       },
     ];
     return Padding(

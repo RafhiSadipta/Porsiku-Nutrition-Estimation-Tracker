@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:porsiku/components/input_field.dart';
 import 'package:http/http.dart' as http;
+import 'package:porsiku/constants/constants.dart';
 import 'dart:convert';
 import 'login.dart';
+import 'package:porsiku/components/primary_button.dart';
 
 class SignupPage extends StatefulWidget {
   final Map<String, dynamic>? onboardingData;
@@ -17,21 +19,66 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController providerController = TextEditingController();
+  final TextEditingController usiaController = TextEditingController();
+  final TextEditingController tinggiBadanController = TextEditingController();
+  final TextEditingController beratBadanController = TextEditingController();
+  final TextEditingController jenisKelaminController = TextEditingController();
+  final TextEditingController aktivitasController = TextEditingController();
+  final TextEditingController programController = TextEditingController();
+  final TextEditingController targetBeratBadanController =
+      TextEditingController();
+  final TextEditingController targetWaktuController = TextEditingController();
+
   bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Optional: bisa prefill dari data onboarding jika ada
     if (widget.onboardingData != null) {
-      // usernameController.text = widget.onboardingData!['username'] ?? '';
+      // Username tetap manual dari input user signup
+      usiaController.text = widget.onboardingData!['age']?.toString() ?? '';
+      jenisKelaminController.text = _mapGender(
+        widget.onboardingData!['gender'],
+      );
+      beratBadanController.text =
+          widget.onboardingData!['weight']?.toString() ?? '';
+      tinggiBadanController.text =
+          widget.onboardingData!['height']?.toString() ?? '';
+      programController.text = widget.onboardingData!['goal'] ?? '';
+      targetBeratBadanController.text =
+          widget.onboardingData!['targetWeight']?.toString() ?? '';
+      targetWaktuController.text = _parsePace(widget.onboardingData!['pace']);
+      aktivitasController.text = widget.onboardingData!['activityLevel'] ?? '';
+      // providerController.text = ... (isi jika ada)
     }
+    print(widget.onboardingData);
+  }
+
+  String _mapGender(dynamic gender) {
+    return gender?.toString() ?? '';
+  }
+
+  String _parsePace(dynamic pace) {
+    // pace bisa berupa '0.05kg/week' atau angka, ambil hanya angkanya
+    if (pace == null) return '';
+    final match = RegExp(r'[\d.]+').firstMatch(pace.toString());
+    return match != null ? match.group(0)! : pace.toString();
   }
 
   Future<void> _register() async {
     final username = usernameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
+    final provider = providerController.text.trim();
+    final usia = usiaController.text.trim();
+    final tinggiBadan = tinggiBadanController.text.trim();
+    final beratBadan = beratBadanController.text.trim();
+    final jenisKelamin = jenisKelaminController.text.trim();
+    final aktivitas = aktivitasController.text.trim();
+    final program = programController.text.trim();
+    final targetBeratBadan = targetBeratBadanController.text.trim();
+    final targetWaktu = targetWaktuController.text.trim();
 
     if (username.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(
@@ -45,7 +92,24 @@ class _SignupPageState extends State<SignupPage> {
     final uri = Uri.parse(
       'http://10.0.2.2:8080/api/register',
     ); // Localhost Android emulator
-    final body = {'username': username, 'email': email, 'password': password};
+    final body = {
+      'username': username,
+      'email': email,
+      'password': password,
+      if (provider.isNotEmpty) 'provider': provider,
+      if (usia.isNotEmpty) 'usia': int.tryParse(usia) ?? 0,
+      if (jenisKelamin.isNotEmpty) 'gender': jenisKelamin,
+      if (beratBadan.isNotEmpty)
+        'berat_badan': double.tryParse(beratBadan) ?? 0,
+      if (tinggiBadan.isNotEmpty)
+        'tinggi_badan': double.tryParse(tinggiBadan) ?? 0,
+      if (program.isNotEmpty) 'program': program,
+      if (targetWaktu.isNotEmpty)
+        'target_mingguan': double.tryParse(targetWaktu) ?? 0,
+      if (targetBeratBadan.isNotEmpty)
+        'target_akhir': double.tryParse(targetBeratBadan) ?? 0,
+      if (aktivitas.isNotEmpty) 'aktivitas': aktivitas,
+    };
 
     try {
       final response = await http.post(
@@ -60,9 +124,10 @@ class _SignupPageState extends State<SignupPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Berhasil daftar! Silakan login.")),
         );
-        Navigator.pushReplacement(
-          context,
+        // Langsung arahkan ke halaman LoginPage setelah berhasil daftar
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
         );
       } else {
         final responseBody = json.decode(response.body);
@@ -70,6 +135,9 @@ class _SignupPageState extends State<SignupPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(errorMsg)));
+        if (response.statusCode != 200) {
+          print('Register error: \\n${response.body}');
+        }
       }
     } catch (e) {
       setState(() => isLoading = false);
@@ -94,16 +162,19 @@ class _SignupPageState extends State<SignupPage> {
                 const Text(
                   'Sign Up',
                   style: TextStyle(
-                    fontSize: 26,
+                    fontSize: AppTexts.xl,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: AppColors.black,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Daftar untuk mulai menggunakan PorsiKu.',
-                  style: TextStyle(fontSize: 15, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: AppTexts.md,
+                    color: AppColors.grey,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
@@ -128,30 +199,9 @@ class _SignupPageState extends State<SignupPage> {
                 const SizedBox(height: 24),
 
                 // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _register,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child:
-                        isLoading
-                            ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                            : const Text(
-                              'Create Account',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                  ),
+                PrimaryButton(
+                  text: isLoading ? 'Loading...' : 'Sign Up',
+                  onPressed: isLoading ? null : _register,
                 ),
                 const SizedBox(height: 16),
 
@@ -165,9 +215,9 @@ class _SignupPageState extends State<SignupPage> {
                   child: const Text(
                     'Already have an account? Login',
                     style: TextStyle(
-                      color: Colors.black54,
+                      color: AppColors.grey,
                       decoration: TextDecoration.underline,
-                      fontSize: 15,
+                      fontSize: AppTexts.md,
                     ),
                   ),
                 ),
