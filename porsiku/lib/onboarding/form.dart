@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../authentication/signup.dart'; // Pastikan path ini benar
+
+// Import semua step onboarding
 import 'steps/step_intro.dart';
 import 'steps/step_gender.dart';
 import 'steps/step_age.dart';
@@ -40,6 +43,26 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
     if (step > 0) {
       setState(() => step--);
     }
+  }
+
+  void goToSignup() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => SignupPage(
+              age: age,
+              gender: gender ?? '',
+              height: height,
+              weight: weight,
+              goal: goal ?? '',
+              targetWeight: targetWeight,
+              pace: pace,
+              activityLevel: activityLevel ?? '',
+              reminders: reminders,
+            ),
+      ),
+    );
   }
 
   Widget getStepWidget() {
@@ -101,11 +124,7 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
           },
         );
       case 10:
-        return StepReady(
-          onGetStarted: () {
-            /* TODO: Implement action */
-          },
-        );
+        return StepReady(onGetStarted: goToSignup);
       default:
         return const SizedBox();
     }
@@ -118,7 +137,7 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar
+            // Header dengan progress bar dan tombol kembali
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
@@ -144,7 +163,9 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
                 ],
               ),
             ),
+            // Widget step yang sedang aktif
             Expanded(child: getStepWidget()),
+            // Tombol Next
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: SizedBox(

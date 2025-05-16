@@ -30,15 +30,15 @@ class StepGoal extends StatelessWidget {
         GoalOption(
           icon: Icons.local_fire_department,
           label: 'Menurunkan berat badan',
-          selected: selectedGoal == 'lose',
-          onTap: () => onGoalSelected('lose'),
+          selected: selectedGoal == 'cutting',
+          onTap: () => onGoalSelected('cutting'),
         ),
         const SizedBox(height: 16),
         GoalOption(
           icon: Icons.fitness_center,
           label: 'Menaikkan berat badan',
-          selected: selectedGoal == 'gain',
-          onTap: () => onGoalSelected('gain'),
+          selected: selectedGoal == 'bulking',
+          onTap: () => onGoalSelected('bulking'),
         ),
         const SizedBox(height: 16),
         GoalOption(

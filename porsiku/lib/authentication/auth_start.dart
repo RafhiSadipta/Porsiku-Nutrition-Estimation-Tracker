@@ -20,7 +20,11 @@ class AuthStartPage extends StatelessWidget {
                 // Cookie Icon
                 Container(
                   margin: const EdgeInsets.only(bottom: 40),
-                  child: Icon(Icons.cookie, size: 120, color: Colors.black87),
+                  child: const Icon(
+                    Icons.cookie,
+                    size: 120,
+                    color: Colors.black87,
+                  ),
                 ),
                 // Title
                 const Text(
@@ -63,56 +67,23 @@ class AuthStartPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => const SignupPage(),
+                          builder:
+                              (context) => SignupPage(
+                                gender: '',
+                                age: 18,
+                                height: 170,
+                                weight: 65,
+                                goal: 'Maintain Weight',
+                                targetWeight: 65,
+                                pace: 'Normal',
+                                activityLevel: 'Low',
+                                reminders: [],
+                              ),
                         ),
                       );
                     },
                   ),
                 ),
-                // const SizedBox(height: 16),
-                // // Continue With Google Button
-                // SizedBox(
-                //   width: double.infinity,
-                //   child: ElevatedButton.icon(
-                //     icon: Image.asset(
-                //       'assets/google_logo.png',
-                //       height: 24,
-                //       width: 24,
-                //     ),
-                //     label: const Text(
-                //       'Continue With Google',
-                //       style: TextStyle(
-                //         fontSize: 16,
-                //         fontWeight: FontWeight.w600,
-                //         color: Colors.white,
-                //       ),
-                //     ),
-                //     style: ElevatedButton.styleFrom(
-                //       backgroundColor: Colors.white,
-                //       foregroundColor: Colors.black,
-                //       side: const BorderSide(color: Colors.black12),
-                //       padding: const EdgeInsets.symmetric(vertical: 16),
-                //       shape: RoundedRectangleBorder(
-                //         borderRadius: BorderRadius.circular(12),
-                //       ),
-                //       alignment: Alignment.centerLeft,
-                //       elevation: 2,
-                //       shadowColor: Colors.black12,
-                //     ).copyWith(
-                //       backgroundColor: WidgetStateProperty.resolveWith<Color>((
-                //         states,
-                //       ) {
-                //         if (states.contains(WidgetState.pressed)) {
-                //           return Colors.grey.shade200;
-                //         }
-                //         return Colors.white;
-                //       }),
-                //     ),
-                //     onPressed: () {
-                //       // TODO: Continue with Google
-                //     },
-                //   ),
-                // ),
                 const SizedBox(height: 16),
                 // Log In With Email Button
                 SizedBox(
@@ -145,7 +116,7 @@ class AuthStartPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Log In With Email Button
+                // Scan Button
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
