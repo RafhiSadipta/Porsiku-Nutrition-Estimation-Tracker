@@ -13,6 +13,7 @@ func SetupRoutes() *gin.Engine {
 
 	// Public routes
 	r.POST("/api/register", auth.Register)
+	r.POST("/api/google-signup", auth.GoogleSignUp)
 	r.POST("/api/login", auth.Login)
 
 	// Protected routes (dengan middleware AuthMiddleware)

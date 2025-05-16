@@ -59,5 +59,11 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "User berhasil terdaftar"})
+	token, err := utils.GenerateJWT(input.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "User berhasil terdaftar", "token": token, "user": input})
 }

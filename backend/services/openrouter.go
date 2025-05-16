@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 type NutritionItem struct {
@@ -35,6 +36,101 @@ func DetectFoodOpenRouter(base64Image string, prompt string) (string, error) {
 	}
 
 	return sendToOpenRouter(payload)
+}
+
+func TranscribeAudioOpenRouter(audioData []byte) (string, error) {
+	baseURL := "https://api.assemblyai.com"
+	apiKey := os.Getenv("ASSEMBLYAI_API_KEY")
+
+	client := &http.Client{}
+
+	// 1. Upload audio data
+	uploadURL := baseURL + "/v2/upload"
+	req, err := http.NewRequest("POST", uploadURL, bytes.NewReader(audioData))
+	if err != nil {
+		return "", fmt.Errorf("gagal membuat request upload: %v", err)
+	}
+	req.Header.Set("authorization", apiKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("upload gagal: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("upload gagal: %s", string(body))
+	}
+
+	var uploadResp struct {
+		UploadURL string `json:"upload_url"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+		return "", fmt.Errorf("gagal decode upload response: %v", err)
+	}
+
+	// 2. Request transcription
+	transcriptReq := map[string]interface{}{
+		"audio_url":    uploadResp.UploadURL,
+		"speech_model": "universal",
+	}
+	reqBody, _ := json.Marshal(transcriptReq)
+
+	req, err = http.NewRequest("POST", baseURL+"/v2/transcript", bytes.NewReader(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("gagal membuat request transkrip: %v", err)
+	}
+	req.Header.Set("authorization", apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("request transkrip gagal: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("request transkrip gagal: %s", string(body))
+	}
+
+	var transcriptResp struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&transcriptResp); err != nil {
+		return "", fmt.Errorf("gagal decode transcript response: %v", err)
+	}
+
+	// 3. Polling hasil transkrip
+	pollURL := baseURL + "/v2/transcript/" + transcriptResp.ID
+	for {
+		req, _ := http.NewRequest("GET", pollURL, nil)
+		req.Header.Set("authorization", apiKey)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", fmt.Errorf("polling gagal: %v", err)
+		}
+		defer resp.Body.Close()
+
+		var result struct {
+			Status string `json:"status"`
+			Text   string `json:"text"`
+			Error  string `json:"error"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return "", fmt.Errorf("gagal decode polling response: %v", err)
+		}
+
+		if result.Status == "completed" {
+			return result.Text, nil
+		} else if result.Status == "error" {
+			return "", fmt.Errorf("transkripsi gagal: %s", result.Error)
+		}
+
+		time.Sleep(3 * time.Second)
+	}
 }
 
 func CalculateNutrition(foodListText string, nutritionPrompt string) ([]NutritionItem, error) {
