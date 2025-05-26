@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:porsiku/components/title.dart';
 import 'package:porsiku/constants/constants.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'signup.dart';
 import 'package:porsiku/components/input_field.dart';
@@ -46,13 +47,29 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final token = data['token'];
+        final token = data['token']?.toString() ?? '';
+        final userId = data['user_id']?.toString() ?? '';
+
+        if (token.isEmpty || userId.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Login gagal: Data user_id/token tidak ditemukan."),
+            ),
+          );
+          setState(() {
+            isLoading = false;
+          });
+          return;
+        }
+
+        // Simpan token dan user_id ke SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        await prefs.setString('user_id', userId);
 
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text("Login berhasil!")));
-
-        // TODO: Simpan token ke SharedPreferences
 
         // Navigasi ke halaman utama setelah login berhasil
         Navigator.pushReplacement(
@@ -60,16 +77,21 @@ class _LoginPageState extends State<LoginPage> {
           MaterialPageRoute(builder: (context) => const DashboardPage()),
         );
 
-        print("Login sukses. Token: $token");
+        print("Login sukses. Token: $token, UserID: $userId");
       } else {
-        final error = jsonDecode(response.body)['error'] ?? "Login gagal";
+        String errorMsg = "Login gagal";
+        try {
+          final error = jsonDecode(response.body)['error'];
+          if (error != null) errorMsg = error.toString();
+        } catch (_) {}
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error)));
+        ).showSnackBar(SnackBar(content: Text(errorMsg)));
       }
     } catch (e) {
+      // Tampilkan error detail ke user (bukan hanya di terminal)
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal terhubung ke server.")),
+        SnackBar(content: Text("Gagal terhubung ke server: ${e.toString()}")),
       );
     } finally {
       if (mounted) {

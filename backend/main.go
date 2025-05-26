@@ -23,5 +23,6 @@ func main() {
 	}
 
 	r := routes.SetupRoutes()
-	r.Run(":8080")
+	// Pastikan listen di 0.0.0.0 agar bisa diakses dari emulator Android
+	r.Run("0.0.0.0:8080")
 }
