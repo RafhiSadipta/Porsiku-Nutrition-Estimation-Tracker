@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:porsiku/constants/constants.dart';
 import 'package:porsiku/components/title.dart';
-import 'package:porsiku/components/primary_button.dart';
-import 'package:porsiku/components/secondary_button.dart';
+import 'package:porsiku/components/button.dart'; // Updated import
 
 import 'signup.dart';
 import 'login.dart';
@@ -44,8 +43,9 @@ class AuthStartPage extends StatelessWidget {
                 const SizedBox(height: 40),
 
                 // Tombol Continue with Email
-                PrimaryButton(
+                Button(
                   text: 'Continue With Email',
+                  variant: ButtonVariant.primary,
                   icon: const Icon(
                     Icons.mail_outline,
                     color: AppColors.white,
@@ -60,8 +60,9 @@ class AuthStartPage extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Tombol Continue with Google
-                PrimaryButton(
+                Button(
                   text: 'Continue With Google',
+                  variant: ButtonVariant.primary,
                   icon: const Icon(
                     Icons.g_mobiledata,
                     color: AppColors.white,
@@ -74,8 +75,9 @@ class AuthStartPage extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Tombol Login dengan Email
-                SecondaryButton(
+                Button(
                   text: 'Log In With Email',
+                  variant: ButtonVariant.secondary,
                   icon: const Icon(
                     Icons.badge_outlined,
                     color: AppColors.black,
@@ -90,8 +92,9 @@ class AuthStartPage extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Tombol Scan (opsional, bisa disembunyikan nanti)
-                SecondaryButton(
+                Button(
                   text: 'Scan',
+                  variant: ButtonVariant.secondary,
                   icon: const Icon(
                     Icons.qr_code_scanner,
                     color: AppColors.black,

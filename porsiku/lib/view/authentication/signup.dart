@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:porsiku/components/input_field.dart';
 import 'package:http/http.dart' as http;
+import 'package:porsiku/components/title.dart';
 import 'package:porsiku/constants/constants.dart';
 import 'dart:convert';
 import 'login.dart';
-import 'package:porsiku/components/primary_button.dart';
+import 'package:porsiku/components/button.dart'; // Updated import
 
 class SignupPage extends StatefulWidget {
   final Map<String, dynamic>? onboardingData;
@@ -127,7 +128,7 @@ class _SignupPageState extends State<SignupPage> {
         // Langsung arahkan ke halaman LoginPage setelah berhasil daftar
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
+          (route) => false, // Hapus semua route sebelumnya
         );
       } else {
         final responseBody = json.decode(response.body);
@@ -159,23 +160,10 @@ class _SignupPageState extends State<SignupPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 80),
-                const Text(
-                  'Sign Up',
-                  style: TextStyle(
-                    fontSize: AppTexts.xl,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                const TitleText(text: 'Sign Up'),
                 const SizedBox(height: 8),
-                const Text(
-                  'Daftar untuk mulai menggunakan PorsiKu.',
-                  style: TextStyle(
-                    fontSize: AppTexts.md,
-                    color: AppColors.grey,
-                  ),
-                  textAlign: TextAlign.center,
+                const SubtitleText(
+                  text: 'Daftar untuk mulai menggunakan PorsiKu',
                 ),
                 const SizedBox(height: 32),
 
@@ -199,9 +187,12 @@ class _SignupPageState extends State<SignupPage> {
                 const SizedBox(height: 24),
 
                 // Submit Button
-                PrimaryButton(
+                Button(
+                  // Replaced PrimaryButton
                   text: isLoading ? 'Loading...' : 'Sign Up',
+                  variant: ButtonVariant.primary, // Added variant
                   onPressed: isLoading ? null : _register,
+                  isActive: !isLoading, // Added isActive based on isLoading
                 ),
                 const SizedBox(height: 16),
 

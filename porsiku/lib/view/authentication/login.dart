@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:porsiku/components/title.dart';
 import 'package:porsiku/constants/constants.dart';
 import 'dart:convert';
 
 import 'signup.dart';
 import 'package:porsiku/components/input_field.dart';
-import 'package:porsiku/components/primary_button.dart';
+import 'package:porsiku/components/button.dart'; // Updated import
+import 'package:porsiku/view/main/dashboard.dart'; // Import DashboardPage
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -52,8 +54,11 @@ class _LoginPageState extends State<LoginPage> {
 
         // TODO: Simpan token ke SharedPreferences
 
-        // TODO: Navigasi ke halaman utama setelah login berhasil
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+        // Navigasi ke halaman utama setelah login berhasil
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardPage()),
+        );
 
         print("Login sukses. Token: $token");
       } else {
@@ -95,23 +100,11 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 80),
-                  const Text(
-                    'Log In',
-                    style: TextStyle(
-                      fontSize: AppTexts.xl,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.black,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                  const TitleText(text: 'Log In'),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Masuk untuk melanjutkan perjalananmu\nbersama PorsiKu.',
-                    style: TextStyle(
-                      fontSize: AppTexts.md,
-                      color: AppColors.grey,
-                    ),
-                    textAlign: TextAlign.center,
+                  const SubtitleText(
+                    text:
+                        'Masuk untuk melanjutkan perjalananmu\nbersama PorsiKu.',
                   ),
                   const SizedBox(height: 32),
 
@@ -152,9 +145,12 @@ class _LoginPageState extends State<LoginPage> {
 
                   SizedBox(
                     width: double.infinity,
-                    child: PrimaryButton(
+                    child: Button(
+                      // Replaced PrimaryButton
                       text: isLoading ? 'Loading...' : 'Log In',
+                      variant: ButtonVariant.primary, // Added variant
                       onPressed: isLoading ? null : login,
+                      isActive: !isLoading, // Added isActive based on isLoading
                     ),
                   ),
                   const SizedBox(height: 16),
