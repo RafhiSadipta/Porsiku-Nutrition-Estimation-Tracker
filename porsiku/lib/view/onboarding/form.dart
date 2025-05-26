@@ -11,7 +11,7 @@ import 'steps/step_goal_pace.dart';
 import 'steps/step_activity_level.dart';
 import 'steps/step_reminder.dart';
 import 'steps/step_ready.dart';
-import '../../components/primary_button.dart';
+import '../../components/button.dart';
 import '../../components/back_button.dart';
 import '../../components/progressbar.dart';
 
@@ -168,7 +168,7 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
-                  if (step > 0) ...[
+                  if (step >= 0) ...[
                     BackButtonCustom(onPressed: prevStep),
                     const SizedBox(width: 16),
                   ],
@@ -181,8 +181,9 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
               padding: const EdgeInsets.all(24),
               child: SizedBox(
                 width: double.infinity,
-                child: PrimaryButton(
+                child: Button(
                   text: step == 10 ? "Let's Get Started" : 'Next',
+                  variant: ButtonVariant.primary,
                   isActive: step == 10 ? true : _isStepValid(),
                   onPressed:
                       step == 10

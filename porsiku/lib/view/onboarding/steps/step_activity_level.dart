@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:porsiku/components/title.dart';
-import 'package:porsiku/constants/constants.dart';
+import 'package:porsiku/components/option.dart'; // Import Option
 
 class StepActivityLevel extends StatelessWidget {
   final String? selectedLevel;
@@ -58,10 +58,11 @@ class StepActivityLevel extends StatelessWidget {
           ...levels.map(
             (level) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: ActivityLevelOption(
-                icon: level['icon'] as IconData,
+              child: Option(
+                // Use Option
+                icon: level['icon'] as IconData?,
                 label: level['label'] as String,
-                desc: level['desc'] as String,
+                description: level['desc'] as String?,
                 selected: selectedLevel == level['value'],
                 onTap: () => onLevelSelected(level['value'] as String),
               ),
@@ -73,57 +74,4 @@ class StepActivityLevel extends StatelessWidget {
   }
 }
 
-class ActivityLevelOption extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String desc;
-  final bool selected;
-  final VoidCallback onTap;
-  const ActivityLevelOption({
-    required this.icon,
-    required this.label,
-    required this.desc,
-    required this.selected,
-    required this.onTap,
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        decoration: BoxDecoration(
-          color: selected ? Colors.black12 : Colors.white,
-          borderRadius: BorderRadius.circular(AppBorderRadius.md),
-          border: Border.all(color: Colors.black12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.black87),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.black,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  desc,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// ActivityLevelOption class can be removed from this file now

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:porsiku/constants/constants.dart';
 import 'package:porsiku/view/authentication/login.dart';
 import 'form.dart';
-import '../../components/primary_button.dart';
-import '../../components/secondary_button.dart';
+import '../../components/button.dart';
 import '../../components/title.dart';
 
 class LandingPage extends StatelessWidget {
@@ -32,8 +31,9 @@ class LandingPage extends StatelessWidget {
                 SubtitleText(text: 'Foto makananmu, ketahui gizi harianmu'),
                 const SizedBox(height: 32),
                 // Let's Get Started Button
-                PrimaryButton(
+                Button(
                   text: "Let's Get Started",
+                  variant: ButtonVariant.primary, // Added variant
                   icon: const Icon(
                     Icons.rocket_launch_rounded,
                     size: 24,
@@ -49,8 +49,9 @@ class LandingPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 // I already have an account Button
-                SecondaryButton(
+                Button(
                   text: 'I already have an account',
+                  variant: ButtonVariant.secondary, // Added variant
                   icon: const Icon(
                     Icons.person_rounded,
                     size: 24,
