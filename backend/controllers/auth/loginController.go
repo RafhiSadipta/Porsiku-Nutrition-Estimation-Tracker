@@ -71,6 +71,6 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login berhasil",
 		"token":   token,
-		"user":    user,
+		"user_id": user.ID, // Kirim user_id langsung
 	})
 }
