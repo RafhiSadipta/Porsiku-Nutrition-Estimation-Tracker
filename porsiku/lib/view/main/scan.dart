@@ -4,6 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'viewimage.dart';
+// import 'dart:convert';
+// import 'package:http/http.dart' as http;
+// import 'result.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -95,10 +98,10 @@ class _ScanPageState extends State<ScanPage> {
       _imageFile = File(file.path);
     });
     if (!mounted) return;
+    // Langsung arahkan ke ViewImagePage setelah capture
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => ViewImagePage(imagePath: file.path)),
     );
-    // TODO: Kirim _imageFile ke API untuk analisa
   }
 
   Future<void> _pickFromGallery() async {
@@ -108,7 +111,12 @@ class _ScanPageState extends State<ScanPage> {
       setState(() {
         _imageFile = File(pickedFile.path);
       });
-      // TODO: Kirim _imageFile ke API untuk analisa
+      // Langsung arahkan ke ViewImagePage setelah pilih dari galeri
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ViewImagePage(imagePath: pickedFile.path),
+        ),
+      );
     }
   }
 
