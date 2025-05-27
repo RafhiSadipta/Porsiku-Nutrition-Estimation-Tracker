@@ -71,6 +71,8 @@ class _LoginPageState extends State<LoginPage> {
           context,
         ).showSnackBar(const SnackBar(content: Text("Login berhasil!")));
 
+        // TODO: Simpan token ke SharedPreferences
+        
         // Navigasi ke halaman utama setelah login berhasil
         Navigator.pushReplacement(
           context,

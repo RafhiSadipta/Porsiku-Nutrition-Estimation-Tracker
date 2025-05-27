@@ -23,6 +23,7 @@ class _DashboardPageState extends State<DashboardPage> {
   _carouselController = // Ensure this type matches RecommendationCarousel
       CarouselSliderController();
   int _currentCarouselIndex = 0; // Tambahkan state untuk indeks carousel
+
   Future<String?> _getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('user_id');
@@ -498,6 +499,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         );
       },
+
     );
   }
 
@@ -509,7 +511,7 @@ class _DashboardPageState extends State<DashboardPage> {
       if (value is String) return double.tryParse(value) ?? 0.0;
       return 0.0;
     }
-
+    
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
