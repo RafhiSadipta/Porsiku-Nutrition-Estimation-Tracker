@@ -9,6 +9,7 @@ import 'package:porsiku/components/nutrient_progress_row.dart';
 import 'package:porsiku/components/recommendation_carousel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porsiku/service/api_service.dart';
+import 'package:porsiku/view/main/scan.dart'; // Import ScanPage
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -107,9 +108,11 @@ class _DashboardPageState extends State<DashboardPage> {
                     icon: Icons.camera_alt_outlined,
                     label: "Camera",
                     onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to Camera/Scan page
-                      Navigator.pushNamed(context, '/scan');
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ScanPage(),
+                        ),
+                      );
                     },
                   ),
                   _buildDialogOption(
@@ -499,7 +502,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         );
       },
-
     );
   }
 
@@ -511,7 +513,7 @@ class _DashboardPageState extends State<DashboardPage> {
       if (value is String) return double.tryParse(value) ?? 0.0;
       return 0.0;
     }
-    
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

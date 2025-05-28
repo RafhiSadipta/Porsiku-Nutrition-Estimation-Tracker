@@ -44,6 +44,7 @@ dependencies:
   permission_handler: ^11.2.0
   gal: ^2.3.1
   shared_preferences: ^2.5.3
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

@@ -38,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final url = Uri.parse('http://10.0.2.2:8080/api/login');
+      final url = Uri.parse('http://192.168.0.103:8080/api/login');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -65,14 +65,14 @@ class _LoginPageState extends State<LoginPage> {
         // Simpan token dan user_id ke SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
-        await prefs.setString('user_id', userId);
+        await prefs.setString('user_id', userId); // pastikan key: user_id
 
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text("Login berhasil!")));
 
         // TODO: Simpan token ke SharedPreferences
-        
+
         // Navigasi ke halaman utama setelah login berhasil
         Navigator.pushReplacement(
           context,
