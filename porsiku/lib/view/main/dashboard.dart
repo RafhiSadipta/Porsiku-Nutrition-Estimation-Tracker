@@ -10,6 +10,10 @@ import 'package:porsiku/components/recommendation_carousel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porsiku/service/api_service.dart';
 import 'package:porsiku/view/main/scan.dart'; // Import ScanPage
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:porsiku/view/main/result.dart'; // Import ResultPage
+import 'package:path_provider/path_provider.dart'; // Import path_provider
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -20,8 +24,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
-  final CarouselSliderController
-  _carouselController = // Ensure this type matches RecommendationCarousel
+  final CarouselSliderController _carouselController =
       CarouselSliderController();
   int _currentCarouselIndex = 0; // Tambahkan state untuk indeks carousel
 
@@ -106,7 +109,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   _buildDialogOption(
                     context,
                     icon: Icons.camera_alt_outlined,
-                    label: "Camera",
+                    label: "Capture",
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -129,12 +132,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   _buildDialogOption(
                     context,
                     icon: Icons.mic_none_outlined,
-                    label: "Voice",
+                    label: "Speech",
                     onTap: () {
-                      Navigator.pop(context); // Close the options dialog first
-                      _showVoiceInputDialog(
-                        context,
-                      ); // Then show the voice input dialog
+                      Navigator.pop(context);
+                      _showSimpleVoiceInputDialog(context);
                     },
                   ),
                   _buildDialogOption(
@@ -163,120 +164,214 @@ class _DashboardPageState extends State<DashboardPage> {
     final TextEditingController textController = TextEditingController();
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              AppBorderRadius.lg,
-            ), // Consistent rounding
-          ),
-          backgroundColor: AppColors.white,
-          contentPadding: const EdgeInsets.all(AppBorderRadius.lg),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.grey),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.lg),
               ),
-              TextField(
-                controller: textController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: "What do you eat today?",
-                  hintStyle: TextStyle(color: AppColors.grey),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                    borderSide: BorderSide(color: AppColors.lightGrey),
+              backgroundColor: AppColors.white,
+              contentPadding: const EdgeInsets.all(AppBorderRadius.lg),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.grey),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                    borderSide: BorderSide(
-                      color: AppColors.blue,
-                    ), // Highlight color when focused
+                  TextField(
+                    controller: textController,
+                    autofocus: true,
+                    enabled: true,
+                    decoration: InputDecoration(
+                      hintText: "What do you eat today?",
+                      hintStyle: TextStyle(color: AppColors.grey),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        borderSide: BorderSide(color: AppColors.lightGrey),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        borderSide: BorderSide(color: AppColors.blue),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppBorderRadius.md,
+                        vertical: AppBorderRadius.sm,
+                      ),
+                    ),
+                    onSubmitted: (_) {
+                      _submitFoodInput(dialogContext, textController, setState);
+                    },
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppBorderRadius.md,
-                    vertical: AppBorderRadius.sm, // Adjust vertical padding
+                  const SizedBox(height: AppBorderRadius.lg),
+                  Button(
+                    text: "Confirm",
+                    variant: ButtonVariant.primary,
+                    onPressed: () {
+                      _submitFoodInput(dialogContext, textController, setState);
+                    },
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: AppBorderRadius.lg),
-              Button(
-                text: "Confirm",
-                variant: ButtonVariant.primary,
-                onPressed: () {
-                  // TODO: Implement what happens on confirm (e.g., process textController.text)
-                  print("Food entered: ${textController.text}");
-                  Navigator.of(context).pop(); // Close the text input dialog
-                },
-                // Make button full width or adjust as needed
-                // minWidth: double.infinity,
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
-  void _showVoiceInputDialog(BuildContext context) {
+  void _submitFoodInput(
+    BuildContext dialogContext,
+    TextEditingController textController,
+    void Function(void Function()) setState,
+  ) async {
+    final foodText = textController.text.trim();
+    if (foodText.isEmpty || foodText.replaceAll(',', '').trim().isEmpty) {
+      ScaffoldMessenger.of(dialogContext).showSnackBar(
+        const SnackBar(content: Text('Input makanan tidak boleh kosong.')),
+      );
+      return;
+    }
+    // Remove isLoading usage for now to fix undefined errors
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final foodListArr =
+          foodText
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
+      final response = await http
+          .post(
+            Uri.parse('http://192.168.136.53:8080/api/nutri-estimation'),
+            headers: <String, String>{
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({'food_list': foodListArr}),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> respJson = jsonDecode(response.body);
+        var nutritionResult = respJson['result'];
+        if (nutritionResult == null || nutritionResult is! List) {
+          throw Exception('Format hasil estimasi tidak valid');
+        }
+        if (nutritionResult.isEmpty) {
+          ScaffoldMessenger.of(dialogContext).showSnackBar(
+            const SnackBar(content: Text('Tidak ada hasil estimasi gizi.')),
+          );
+          return;
+        }
+        Navigator.of(dialogContext).pop();
+        Navigator.of(dialogContext).push(
+          MaterialPageRoute(
+            builder:
+                (_) => ResultPage(
+                  foodListText: foodText,
+                  nutritionResult: nutritionResult,
+                  imagePath: '',
+                ),
+          ),
+        );
+      } else {
+        throw Exception('Estimasi nutrisi gagal: ${response.body}');
+      }
+    } catch (e, stack) {
+      ScaffoldMessenger.of(dialogContext).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal estimasi nutrisi: ${e.toString()}\n${stack.toString().split("\n").first}',
+          ),
+          duration: const Duration(seconds: 8),
+        ),
+      );
+    }
+  }
+
+  void _showSimpleVoiceInputDialog(BuildContext context) {
+    // Remove all audio logic, keep only UI
+    bool isRecording = false;
+    bool isUploading = false;
+    String? recordedFilePath;
+    String statusText = "Speech input is currently disabled.";
+
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-          ),
-          backgroundColor: AppColors.white,
-          contentPadding: const EdgeInsets.all(AppBorderRadius.lg),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                "What do you eat today?",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: AppTexts.lg,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black,
-                ),
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.lg),
               ),
-              const SizedBox(height: AppBorderRadius.sm / 2),
-              Text(
-                "Speak loud and clear",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: AppTexts.md, color: AppColors.grey),
+              backgroundColor: AppColors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 32,
+                horizontal: 24,
               ),
-              const SizedBox(
-                height: AppBorderRadius.lg + AppBorderRadius.md,
-              ), // Adjusted gap before icon
-              Container(
-                padding: const EdgeInsets.all(
-                  AppBorderRadius.lg,
-                ), // Padding around the icon
-                decoration: BoxDecoration(
-                  color: AppColors.black, // Black background for the circle
-                  shape: BoxShape.circle, // Circular shape
-                ),
-                child: Icon(
-                  Icons.mic,
-                  size: AppIcons.xl + AppIcons.md, // Larger icon size
-                  color: AppColors.white, // White icon color
-                ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "What do you eat today?",
+                    style: TextStyle(
+                      fontSize: AppTexts.lg,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: AppTexts.md,
+                      color: AppColors.grey,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Material(
+                    color: Colors.transparent,
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        color: isRecording ? AppColors.red : AppColors.black,
+                        shape: BoxShape.circle,
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(48),
+                        onTap: null, // Disabled
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Icon(
+                            isRecording ? Icons.stop : Icons.mic,
+                            color: Colors.white,
+                            size: 48,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (isUploading) ...[
+                    const SizedBox(height: 16),
+                    const CircularProgressIndicator(),
+                  ],
+                ],
               ),
-              const SizedBox(height: AppBorderRadius.lg),
-              // Optionally, add a button to close or confirm, though the image doesn't show one.
-              // For now, tapping outside the dialog will close it.
-            ],
-          ),
+            );
+          },
         );
       },
     );

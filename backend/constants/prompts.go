@@ -31,7 +31,7 @@ Tugasmu:
   - protein (g) (number)
   - lemak (g) (number)
   - karbohidrat (g) (number)
-- Tambahkan satu objek terakhir bernama "total" yang menjumlahkan seluruh nilai nutrisi.
+
 
 Contoh format:
 [
@@ -50,15 +50,8 @@ Contoh format:
     "protein": 1,
     "lemak": 0.2,
     "karbohidrat": 5
-  },
-  {
-    "nama_makanan": "total",
-    "jumlah": "",
-    "kalori": 822,
-    "protein": 81,
-    "lemak": 44.2,
-    "karbohidrat": 17
   }
+  
 ]
 
 Tampilkan hasilnya hanya dalam bentuk JSON saja tanpa penjelasan tambahan apa pun.
