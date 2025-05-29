@@ -13,7 +13,7 @@ import 'package:porsiku/view/main/scan.dart'; // Import ScanPage
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:porsiku/view/main/result.dart'; // Import ResultPage
-import 'package:path_provider/path_provider.dart'; // Import path_provider
+import 'package:porsiku/view/main/audioinput.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -253,7 +253,7 @@ class _DashboardPageState extends State<DashboardPage> {
               .toList();
       final response = await http
           .post(
-            Uri.parse('http://192.168.136.53:8080/api/nutri-estimation'),
+            Uri.parse('http://192.168.18.156:8080/api/nutri-estimation'),
             headers: <String, String>{
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $token',
@@ -300,81 +300,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _showSimpleVoiceInputDialog(BuildContext context) {
-    // Remove all audio logic, keep only UI
-    bool isRecording = false;
-    bool isUploading = false;
-    String? recordedFilePath;
-    String statusText = "Speech input is currently disabled.";
-
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-              ),
-              backgroundColor: AppColors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 32,
-                horizontal: 24,
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "What do you eat today?",
-                    style: TextStyle(
-                      fontSize: AppTexts.lg,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.black,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    statusText,
-                    style: TextStyle(
-                      fontSize: AppTexts.md,
-                      color: AppColors.grey,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  Material(
-                    color: Colors.transparent,
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        color: isRecording ? AppColors.red : AppColors.black,
-                        shape: BoxShape.circle,
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(48),
-                        onTap: null, // Disabled
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Icon(
-                            isRecording ? Icons.stop : Icons.mic,
-                            color: Colors.white,
-                            size: 48,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (isUploading) ...[
-                    const SizedBox(height: 16),
-                    const CircularProgressIndicator(),
-                  ],
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+    showAudioInputDialog(context);
   }
 
   Widget _buildDialogOption(
