@@ -24,7 +24,7 @@ func GetUserById(c *gin.Context) {
 
 	var user models.Users // struct tunggal, bukan slice
 
-	if err := config.DB.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := config.DB.Where("id = ? AND soft_deleted = false", id).First(&user).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
 		return
 	}
@@ -33,16 +33,66 @@ func GetUserById(c *gin.Context) {
 	c.JSON(http.StatusOK, userResponse)
 }
 
-// func PostUser(c *gin.Context) {
-// 	var input models.Users
-// 	if err := c.ShouldBindJSON(&input); err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func UpdateUser(c *gin.Context) {
+	id := c.Param("id")
 
-// 	// Hitung Kalori Harian berdasarkan input user
-// 	input.KaloriHarian = helpers.HitungKalori(input.BB, input.TB, input.Usia, input.Gender, input.Program, input.Aktivitas, input.TargetMingguan)
+	var user models.Users
+	if err := config.DB.Where("id = ? AND soft_deleted = false", id).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
+		return
+	}
 
-// 	config.DB.Create(&input)
-// 	c.JSON(http.StatusOK, input)
-// }
+	var input models.Users
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data tidak valid"})
+		return
+	}
+
+	// Update field satu per satu
+	user.Usia = input.Usia
+	user.Gender = input.Gender
+	user.BB = input.BB
+	user.TB = input.TB
+	user.Program = input.Program
+	user.TargetMingguan = input.TargetMingguan
+	user.TargetAkhir = input.TargetAkhir
+	user.Aktivitas = input.Aktivitas
+
+	// Hitung ulang kalori harian
+	user.KaloriHarian = helpers.HitungKalori(
+		user.BB, user.TB, user.Usia, user.Gender,
+		user.Program, user.Aktivitas, user.TargetMingguan,
+	)
+
+	// Simpan perubahan
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate user"})
+		return
+	}
+
+	// Update Daily Target
+	if err := helpers.BuatDailyTarget(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat daily target"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User berhasil diupdate", "data": user})
+}
+
+func DeleteUser(c *gin.Context) {
+	id := c.Param("id")
+
+	var user models.Users
+	if err := config.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
+		return
+	}
+
+	user.SoftDeleted = true
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User berhasil dihapus (soft deleted)"})
+}
