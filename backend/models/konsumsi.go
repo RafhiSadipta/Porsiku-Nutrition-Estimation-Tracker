@@ -18,6 +18,7 @@ type Konsumsi struct {
 	IsFoto           bool            `json:"is_foto"`
 	WaktuMakan       string          `json:"waktu_makan"` // breakfast, lunch, dinner
 	Tanggal          time.Time       `json:"tanggal"`
-	SoftDeleted      bool            `json:"soft_deleted"`
+	SoftDeleted      bool            `json:"soft_deleted" gorm:"default:false"`
+	IsSaved          bool            `json:"is_saved" gorm:"default:false"`
 	NutritionItems   []NutritionItem `json:"nutrition_items" gorm:"foreignKey:KonsumsiID"`
 }

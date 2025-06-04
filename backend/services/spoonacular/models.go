@@ -1,13 +1,14 @@
 package spoonacular
 
 type RecipeResult struct {
-	ID       int     `json:"id"`
-	Title    string  `json:"title"`
-	Image    string  `json:"image"`
-	Calories float64 `json:"calories"`
-	Carbs    float64 `json:"carbs"`
-	Fat      float64 `json:"fat"`
-	Protein  float64 `json:"protein"`
+	ID             int     `json:"id"`
+	Title          string  `json:"title"`
+	Image          string  `json:"image"`
+	ReadyInMinutes int     `json:"readyInMinutes"`
+	Calories       float64 `json:"calories"`
+	Carbs          float64 `json:"carbs"`
+	Fat            float64 `json:"fat"`
+	Protein        float64 `json:"protein"`
 }
 
 type RecipeDetail struct {

@@ -5,12 +5,13 @@ import (
 	"backend/models"
 
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func SaveKonsumsi(c *gin.Context) {
+func CreateKonsumsi(c *gin.Context) {
 	var req models.Konsumsi
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Request tidak valid"})
@@ -61,6 +62,53 @@ func GetKonsumsiByUserID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Data konsumsi berhasil diambil",
+		"data":    konsumsiList,
+	})
+}
+
+func SaveKonsumsi(c *gin.Context) {
+	idParam := c.Param("id")
+	if idParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter 'id' diperlukan"})
+		return
+	}
+
+	id, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
+		return
+	}
+
+	result := config.DB.Model(&models.Konsumsi{}).
+		Where("id = ?", id).
+		Update("is_saved", true)
+
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Konsumsi tidak ditemukan"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Konsumsi berhasil disimpan"})
+}
+
+func GetSavedKonsumsiByUser(c *gin.Context) {
+	idUser := c.Param("id_user") // ambil dari path URL
+
+	var konsumsiList []models.Konsumsi
+	if err := config.DB.Preload("NutritionItems").
+		Where("id_user = ? AND is_saved = ?", idUser, true).
+		Find(&konsumsiList).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Data konsumsi tersimpan ditemukan",
 		"data":    konsumsiList,
 	})
 }
