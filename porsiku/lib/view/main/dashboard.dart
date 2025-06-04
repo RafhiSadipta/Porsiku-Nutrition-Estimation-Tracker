@@ -9,11 +9,13 @@ import 'package:porsiku/components/nutrient_progress_row.dart';
 import 'package:porsiku/components/recommendation_carousel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porsiku/service/api_service.dart';
-import 'package:porsiku/view/main/scan.dart'; // Import ScanPage
+import 'package:porsiku/view/main/scan.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:porsiku/view/main/result.dart'; // Import ResultPage
+import 'package:porsiku/view/main/result.dart';
 import 'package:porsiku/view/main/audioinput.dart';
+import 'package:porsiku/view/main/recipe.dart';
+import 'package:porsiku/view/main/analytics.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -388,12 +390,9 @@ class _DashboardPageState extends State<DashboardPage> {
         index: _selectedIndex,
         children: [
           _buildDashboardContent(),
-          // Placeholder for Recipes Page (index 1 in new setup)
-          // Container(child: Center(child: Text("Recipes Page"))),
-          // Placeholder for Scan/Add action (index 2) - might not be a page
+          const RecipePage(),
           Container(), // This corresponds to index 2, which is 'Add'
-          // Placeholder for Analytics Page (index 3)
-          // Container(child: Center(child: Text("Analytics Page"))),
+          const AnalyticsPage(),
           // Placeholder for More/Profile Page (index 4)
           // Container(child: Center(child: Text("More/Profile Page"))),
         ],
