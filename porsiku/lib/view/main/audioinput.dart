@@ -46,7 +46,7 @@ Future<void> showAudioInputDialog(BuildContext context) async {
       // === STEP 1: Kirim ke detect_food
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.18.156:8080/api/detect_food'),
+        Uri.parse('http://192.168.0.104:8080/api/detect_food'),
       );
       request.headers['Authorization'] = 'Bearer $token';
       request.files.add(
@@ -77,7 +77,7 @@ Future<void> showAudioInputDialog(BuildContext context) async {
       // === STEP 2: Kirim ke nutri-estimation
       var nutriResponse = await http
           .post(
-            Uri.parse('http://192.168.18.156:8080/api/nutri-estimation'),
+            Uri.parse('http://192.168.0.104:8080/api/nutri-estimation'),
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $token',
