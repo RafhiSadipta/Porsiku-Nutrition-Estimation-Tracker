@@ -40,40 +40,23 @@ func GetProductByBarcode(barcode string) (*ProductInfo, error) {
 	totalCarbs := (nut.Carbohydrates100g * quantity) / 100
 	totalProtein := (nut.Proteins100g * quantity) / 100
 	totalFat := (nut.Fat100g * quantity) / 100
-	totalSalt := (nut.Salt100g * quantity) / 100
 
 	return &ProductInfo{
 		Name:     result.Product.ProductName,
 		Brand:    result.Product.Brands,
-		Quantity: result.Product.Quantity,
+		Jumlah:   result.Product.Quantity,
 		ImageURL: result.Product.ImageURL,
 
-		NutritionPer100g: struct {
-			Calories      float64 `json:"calories"`
-			Carbohydrates float64 `json:"carbohydrates"`
-			Proteins      float64 `json:"proteins"`
-			Fat           float64 `json:"fat"`
-			Salt          float64 `json:"salt"`
-		}{
-			Calories:      nut.EnergyKcal100g,
-			Carbohydrates: nut.Carbohydrates100g,
-			Proteins:      nut.Proteins100g,
-			Fat:           nut.Fat100g,
-			Salt:          nut.Salt100g,
-		},
-
 		NutritionTotal: struct {
-			Calories      float64 `json:"calories"`
-			Carbohydrates float64 `json:"carbohydrates"`
-			Proteins      float64 `json:"proteins"`
-			Fat           float64 `json:"fat"`
-			Salt          float64 `json:"salt"`
+			Kalori      float64 `json:"kalori"`
+			Karbohidrat float64 `json:"karbohidrat"`
+			Protein     float64 `json:"protein"`
+			Lemak       float64 `json:"lemak"`
 		}{
-			Calories:      totalCalories,
-			Carbohydrates: totalCarbs,
-			Proteins:      totalProtein,
-			Fat:           totalFat,
-			Salt:          totalSalt,
+			Kalori:      totalCalories,
+			Karbohidrat: totalCarbs,
+			Protein:     totalProtein,
+			Lemak:       totalFat,
 		},
 	}, nil
 }

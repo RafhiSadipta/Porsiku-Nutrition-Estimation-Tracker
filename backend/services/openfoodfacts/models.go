@@ -18,24 +18,15 @@ type ProductResponse struct {
 }
 
 type ProductInfo struct {
-	Name     string `json:"product_name"`
+	Name     string `json:"nama_makanan"`
 	Brand    string `json:"brand"`
-	Quantity string `json:"quantity"`
+	Jumlah   string `json:"jumlah"`
 	ImageURL string `json:"image_url"`
 
-	NutritionPer100g struct {
-		Calories      float64 `json:"calories"`
-		Carbohydrates float64 `json:"carbohydrates"`
-		Proteins      float64 `json:"proteins"`
-		Fat           float64 `json:"fat"`
-		Salt          float64 `json:"salt"`
-	} `json:"nutrition_per_100g"`
-
 	NutritionTotal struct {
-		Calories      float64 `json:"calories"`
-		Carbohydrates float64 `json:"carbohydrates"`
-		Proteins      float64 `json:"proteins"`
-		Fat           float64 `json:"fat"`
-		Salt          float64 `json:"salt"`
-	} `json:"nutrition_total"`
+		Kalori      float64 `json:"kalori"`
+		Karbohidrat float64 `json:"karbohidrat"`
+		Protein     float64 `json:"protein"`
+		Lemak       float64 `json:"lemak"`
+	} `json:"nutrition"`
 }
