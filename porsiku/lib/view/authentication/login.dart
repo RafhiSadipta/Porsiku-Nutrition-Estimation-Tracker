@@ -38,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final url = Uri.parse('http://192.168.0.101:8080/api/login');
+      final url = Uri.parse('http://192.168.100.110:8080/api/login');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

@@ -20,27 +20,30 @@ class ResultPage extends StatelessWidget {
     final Map<String, dynamic> item =
         nutritionResult.isNotEmpty ? nutritionResult[0] : {};
 
-    final String foodName = item['product_name'] ?? 'Unknown Product';
+    final String foodName = item['nama_makanan'] ?? 'Unknown Product';
     final String foodImage =
         imagePath.isNotEmpty ? imagePath : 'assets/images/Rename.png';
     final String? imageUrl = item['image_url'];
 
-    final double price = 0.0; // Optional: bisa dihitung dari kalori misalnya
     final String mealType = 'Dinner';
     final int quantity = 1;
 
     // Hitung total nutrisi dari nutrition_total
-    final Map<String, dynamic> nutr = item['nutrition_total'] ?? {};
-    final double totalKalori = (nutr['calories'] ?? 0).toDouble();
-    final double totalKarbo = (nutr['carbohydrates'] ?? 0).toDouble();
-    final double totalProtein = (nutr['proteins'] ?? 0).toDouble();
-    final double totalLemak = (nutr['fat'] ?? 0).toDouble();
+    final Map<String, dynamic> nutr =
+        item['nutrition_total'] ?? item['nutrition'] ?? item;
+    // Support key Indonesia & Inggris
+    final double totalKalori =
+        (nutr['kalori'] ?? nutr['calories'] ?? 0).toDouble();
+    final double totalKarbo =
+        (nutr['karbohidrat'] ?? nutr['carbs'] ?? 0).toDouble();
+    final double totalProtein = (nutr['protein'] ?? 0).toDouble();
+    final double totalLemak = (nutr['lemak'] ?? nutr['fat'] ?? 0).toDouble();
 
     final Map<String, dynamic> nutrition = {
       'calories': totalKalori.round(),
       'carbs': totalKarbo.round(),
-      'protein': totalProtein.round(),
-      'fat': totalLemak.round(),
+      'proteins': totalProtein.round(),
+      'fats': totalLemak.round(),
     };
 
     final List<Map<String, dynamic>> ingredients =
@@ -48,15 +51,15 @@ class ResultPage extends StatelessWidget {
             ? nutritionResult.map<Map<String, dynamic>>((item) {
               final nutr = item['nutrition_total'] ?? {};
               return {
-                'name': item['product_name'] ?? '',
-                'calories': (nutr['calories'] ?? 0).round(),
-                'mass': item['quantity'] ?? '',
+                'name': item['nama_makanan'] ?? '',
+                'kalori': (nutr['kalori'] ?? 0).round(),
+                'jumlah': item['jumlah'] ?? '',
               };
             }).toList()
             : [
-              {'name': 'Nasi', 'calories': 270, 'mass': '150g'},
-              {'name': 'Ayam Pop', 'calories': 270, 'mass': '150g'},
-              {'name': 'Sambal', 'calories': 270, 'mass': '150g'},
+              {'name': 'Nasi', 'kalori': 270, 'jumlah': '150g'},
+              {'name': 'Ayam Pop', 'kalori': 270, 'jumlah': '150g'},
+              {'name': 'Sambal', 'kalori': 270, 'jumlah': '150g'},
             ];
 
     return Scaffold(
@@ -152,15 +155,6 @@ class ResultPage extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      price.toStringAsFixed(2),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: AppTexts.md,
-                      ),
-                    ),
-                  ),
                   const SizedBox(width: AppBorderRadius.md),
                   DropdownButton<String>(
                     value: mealType,
@@ -211,13 +205,13 @@ class ResultPage extends StatelessWidget {
                 ),
                 _NutritionCard(
                   icon: Icons.fitness_center,
-                  value: nutrition['protein'],
+                  value: nutrition['proteins'],
                   label: 'Protein',
                   color: AppColors.red,
                 ),
                 _NutritionCard(
                   icon: Icons.eco,
-                  value: nutrition['fat'],
+                  value: nutrition['fats'],
                   label: 'Fat',
                   color: AppColors.green,
                 ),
@@ -251,7 +245,7 @@ class ResultPage extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     subtitle: Text(
-                      '${ing['calories']} cal\u00A0\u00A0${ing['mass']}',
+                      '${ing['kalori']} cal\u00A0\u00A0${ing['jumlah']}',
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.close, color: AppColors.red),
@@ -302,7 +296,7 @@ class _NutritionCard extends StatelessWidget {
           Icon(icon, color: color, size: AppIcons.lg),
           const SizedBox(height: 4),
           Text(
-            '$value${label == 'Calories' ? '' : 'g'}',
+            '$value${label == 'kalori' ? '' : 'g'}',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: AppTexts.md,
