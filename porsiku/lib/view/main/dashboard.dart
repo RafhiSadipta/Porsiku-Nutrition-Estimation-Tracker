@@ -146,7 +146,7 @@ class _DashboardPageState extends State<DashboardPage>
               'image':
                   (item['foto'] != null && item['foto'].toString().isNotEmpty)
                       ? item['foto']
-                      : 'assets/images/Rename.png',
+                      : 'assets/images/placeholder.png',
               'is_foto': item['is_foto'] ?? false,
             });
           }
@@ -506,7 +506,7 @@ class _DashboardPageState extends State<DashboardPage>
       itemBuilder: (context, index) {
         final activity = recentActivity[index];
         final isFoto = activity['is_foto'] == true;
-        final image = activity['image'] ?? 'assets/images/Rename.png';
+        final image = activity['image'] ?? 'assets/images/placeholder.png';
         Widget imageWidget;
         if (isFoto && image.toString().startsWith('http')) {
           imageWidget = Image.network(
@@ -516,7 +516,7 @@ class _DashboardPageState extends State<DashboardPage>
             fit: BoxFit.cover,
             errorBuilder:
                 (context, error, stackTrace) => Image.asset(
-                  'assets/images/Rename.png',
+                  'assets/images/placeholder.png',
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
@@ -532,7 +532,7 @@ class _DashboardPageState extends State<DashboardPage>
             fit: BoxFit.cover,
             errorBuilder:
                 (context, error, stackTrace) => Image.asset(
-                  'assets/images/Rename.png',
+                  'assets/images/placeholder.png',
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
@@ -540,7 +540,7 @@ class _DashboardPageState extends State<DashboardPage>
           );
         } else {
           imageWidget = Image.asset(
-            'assets/images/Rename.png',
+            'assets/images/placeholder.png',
             width: 50,
             height: 50,
             fit: BoxFit.cover,

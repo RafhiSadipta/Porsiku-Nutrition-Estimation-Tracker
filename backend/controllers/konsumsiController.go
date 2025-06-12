@@ -33,6 +33,20 @@ func CreateKonsumsi(c *gin.Context) {
 		return
 	}
 
+	// --- Penjumlahan total nutrisi dari nutrition_items ---
+	var totalKalori, totalProtein, totalLemak, totalKarbo float64
+	for _, item := range req.NutritionItems {
+		totalKalori += item.Kalori
+		totalProtein += item.Protein
+		totalLemak += item.Lemak
+		totalKarbo += item.Karbohidrat
+	}
+	req.KaloriTotal = totalKalori
+	req.ProteinTotal = totalProtein
+	req.LemakTotal = totalLemak
+	req.KarbohidratTotal = totalKarbo
+	// --- END Penjumlahan ---
+
 	if err := config.DB.Create(&req).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan konsumsi"})
 		return
@@ -138,10 +152,19 @@ func UpdateKonsumsi(c *gin.Context) {
 
 	// Update field konsumsi
 	existing.NamaMakanan = input.NamaMakanan
-	existing.KaloriTotal = input.KaloriTotal
-	existing.ProteinTotal = input.ProteinTotal
-	existing.KarbohidratTotal = input.KarbohidratTotal
-	existing.LemakTotal = input.LemakTotal
+	// --- Penjumlahan total nutrisi dari nutrition_items ---
+	var totalKalori, totalProtein, totalLemak, totalKarbo float64
+	for _, item := range input.NutritionItems {
+		totalKalori += item.Kalori
+		totalProtein += item.Protein
+		totalLemak += item.Lemak
+		totalKarbo += item.Karbohidrat
+	}
+	existing.KaloriTotal = totalKalori
+	existing.ProteinTotal = totalProtein
+	existing.LemakTotal = totalLemak
+	existing.KarbohidratTotal = totalKarbo
+	// --- END Penjumlahan ---
 	existing.Foto = input.Foto
 	existing.IsFoto = input.IsFoto
 	existing.WaktuMakan = input.WaktuMakan

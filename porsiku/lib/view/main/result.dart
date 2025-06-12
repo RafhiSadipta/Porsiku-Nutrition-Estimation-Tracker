@@ -77,30 +77,48 @@ class _ResultPageState extends State<ResultPage> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
       if (token == null) return;
-      final item =
-          widget.nutritionResult.isNotEmpty ? widget.nutritionResult[0] : {};
-      final Map<String, dynamic> nutr =
-          item['nutrition_total'] ?? item['nutrition'] ?? item;
-      final double totalKalori =
-          (nutr['kalori'] ?? nutr['calories'] ?? 0).toDouble();
-      final double totalKarbo =
-          (nutr['karbohidrat'] ?? nutr['carbs'] ?? 0).toDouble();
-      final double totalProtein = (nutr['protein'] ?? 0).toDouble();
-      final double totalLemak = (nutr['lemak'] ?? nutr['fat'] ?? 0).toDouble();
+      // Ambil seluruh ingredients
+      final List<Map<String, dynamic>> ingredients =
+          widget.nutritionResult.isNotEmpty
+              ? widget.nutritionResult.map<Map<String, dynamic>>((item) {
+                final nutr = item['nutrition_total'] ?? {};
+                int kalori = 0;
+                if (nutr.isNotEmpty && nutr['kalori'] != null) {
+                  kalori = (nutr['kalori'] ?? 0).round();
+                } else if (item['kalori'] != null) {
+                  kalori = (item['kalori'] ?? 0).round();
+                } else if (item['calories'] != null) {
+                  kalori = (item['calories'] ?? 0).round();
+                }
+                return {
+                  'nama_makanan': item['nama_makanan'] ?? '',
+                  'jumlah': item['jumlah'] ?? '',
+                  'kalori': kalori,
+                  'protein':
+                      (nutr['protein'] ?? item['protein'] ?? 0).toDouble(),
+                  'lemak': (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble(),
+                  'karbohidrat':
+                      (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0)
+                          .toDouble(),
+                };
+              }).toList()
+              : [];
+      // Hitung total dari seluruh ingredients
+      double totalKalori = 0, totalKarbo = 0, totalProtein = 0, totalLemak = 0;
+      for (final ing in ingredients) {
+        totalKalori += (ing['kalori'] ?? 0).toDouble();
+        totalKarbo += (ing['karbohidrat'] ?? 0).toDouble();
+        totalProtein += (ing['protein'] ?? 0).toDouble();
+        totalLemak += (ing['lemak'] ?? 0).toDouble();
+      }
       final now = DateTime.now();
       final mealType = 'Dinner';
-      final jumlah = item['jumlah'] ?? (item['Jumlah'] ?? '');
-      final Map<String, dynamic> nutritionItem = {
-        'nama_makanan': foodName,
-        'jumlah': jumlah,
-        'kalori': totalKalori,
-        'protein': totalProtein,
-        'lemak': totalLemak,
-        'karbohidrat': totalKarbo,
-      };
       String foto = widget.imagePath;
       bool isFoto = widget.imagePath.isNotEmpty;
-      final String? imageUrl = item['image_url'];
+      final String? imageUrl =
+          ingredients.isNotEmpty
+              ? widget.nutritionResult[0]['image_url']
+              : null;
       if (!isFoto && imageUrl != null && imageUrl.isNotEmpty) {
         foto = imageUrl;
         isFoto = true;
@@ -121,7 +139,7 @@ class _ResultPageState extends State<ResultPage> {
           'tanggal': now.toUtc().toIso8601String(),
           'is_foto': isFoto,
           'foto': foto,
-          'nutrition_items': [nutritionItem],
+          'nutrition_items': ingredients,
         }),
       );
       if (response.statusCode == 200) {
@@ -131,7 +149,7 @@ class _ResultPageState extends State<ResultPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal update nama makanan: ${response.body}'),
+            content: Text('Gagal update nama makanan: {response.body}'),
           ),
         );
       }
@@ -156,32 +174,48 @@ class _ResultPageState extends State<ResultPage> {
         });
         return;
       }
-      final item =
-          widget.nutritionResult.isNotEmpty ? widget.nutritionResult[0] : {};
-      final Map<String, dynamic> nutr =
-          item['nutrition_total'] ?? item['nutrition'] ?? item;
-      final double totalKalori =
-          (nutr['kalori'] ?? nutr['calories'] ?? 0).toDouble();
-      final double totalKarbo =
-          (nutr['karbohidrat'] ?? nutr['carbs'] ?? 0).toDouble();
-      final double totalProtein = (nutr['protein'] ?? 0).toDouble();
-      final double totalLemak = (nutr['lemak'] ?? nutr['fat'] ?? 0).toDouble();
+      // Ambil seluruh ingredients
+      final List<Map<String, dynamic>> ingredients =
+          widget.nutritionResult.isNotEmpty
+              ? widget.nutritionResult.map<Map<String, dynamic>>((item) {
+                final nutr = item['nutrition_total'] ?? {};
+                int kalori = 0;
+                if (nutr.isNotEmpty && nutr['kalori'] != null) {
+                  kalori = (nutr['kalori'] ?? 0).round();
+                } else if (item['kalori'] != null) {
+                  kalori = (item['kalori'] ?? 0).round();
+                } else if (item['calories'] != null) {
+                  kalori = (item['calories'] ?? 0).round();
+                }
+                return {
+                  'nama_makanan': item['nama_makanan'] ?? '',
+                  'jumlah': item['jumlah'] ?? '',
+                  'kalori': kalori,
+                  'protein':
+                      (nutr['protein'] ?? item['protein'] ?? 0).toDouble(),
+                  'lemak': (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble(),
+                  'karbohidrat':
+                      (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0)
+                          .toDouble(),
+                };
+              }).toList()
+              : [];
+      // Hitung total dari seluruh ingredients
+      double totalKalori = 0, totalKarbo = 0, totalProtein = 0, totalLemak = 0;
+      for (final ing in ingredients) {
+        totalKalori += (ing['kalori'] ?? 0).toDouble();
+        totalKarbo += (ing['karbohidrat'] ?? 0).toDouble();
+        totalProtein += (ing['protein'] ?? 0).toDouble();
+        totalLemak += (ing['lemak'] ?? 0).toDouble();
+      }
       final now = DateTime.now();
-      final mealType =
-          'Dinner'; // TODO: replace with actual selected meal type if needed
-      final jumlah = item['jumlah'] ?? (item['Jumlah'] ?? '');
-      final Map<String, dynamic> nutritionItem = {
-        'nama_makanan': foodName,
-        'jumlah': jumlah,
-        'kalori': totalKalori,
-        'protein': totalProtein,
-        'lemak': totalLemak,
-        'karbohidrat': totalKarbo,
-      };
-      // Foto logic: jika imagePath kosong dan imageUrl ada, simpan imageUrl ke foto dan is_foto true
+      final mealType = 'Dinner';
       String foto = widget.imagePath;
       bool isFoto = widget.imagePath.isNotEmpty;
-      final String? imageUrl = item['image_url'];
+      final String? imageUrl =
+          ingredients.isNotEmpty
+              ? widget.nutritionResult[0]['image_url']
+              : null;
       if (!isFoto && imageUrl != null && imageUrl.isNotEmpty) {
         foto = imageUrl;
         isFoto = true;
@@ -203,7 +237,7 @@ class _ResultPageState extends State<ResultPage> {
           'tanggal': now.toUtc().toIso8601String(),
           'is_foto': isFoto,
           'foto': foto,
-          'nutrition_items': [nutritionItem],
+          'nutrition_items': ingredients,
         }),
       );
       if (response.statusCode == 200) {
@@ -284,41 +318,78 @@ class _ResultPageState extends State<ResultPage> {
     final String foodImage =
         widget.imagePath.isNotEmpty
             ? widget.imagePath
-            : 'assets/images/Rename.png';
+            : 'assets/images/placeholder.png';
     final String? imageUrl = item['image_url'];
     final String mealType = 'Dinner';
     final int quantity = 1;
-    final Map<String, dynamic> nutr =
-        item['nutrition_total'] ?? item['nutrition'] ?? item;
-    final double totalKalori =
-        (nutr['kalori'] ?? nutr['calories'] ?? 0).toDouble();
-    final double totalKarbo =
-        (nutr['karbohidrat'] ?? nutr['carbs'] ?? 0).toDouble();
-    final double totalProtein = (nutr['protein'] ?? 0).toDouble();
-    final double totalLemak = (nutr['lemak'] ?? nutr['fat'] ?? 0).toDouble();
-    final Map<String, dynamic> nutrition = {
-      'calories': totalKalori.round(),
-      'carbs': totalKarbo.round(),
-      'proteins': totalProtein.round(),
-      'fats': totalLemak.round(),
-    };
-    // Tampilkan warning jika semua nutrisi 0
-    final bool isNutritionZero = nutrition.values.every((v) => v == 0);
+    // Build ingredients list & total nutrition
     final List<Map<String, dynamic>> ingredients =
         widget.nutritionResult.isNotEmpty
             ? widget.nutritionResult.map<Map<String, dynamic>>((item) {
               final nutr = item['nutrition_total'] ?? {};
+              int kalori = 0;
+              if (nutr.isNotEmpty && nutr['kalori'] != null) {
+                kalori = (nutr['kalori'] ?? 0).round();
+              } else if (item['kalori'] != null) {
+                kalori = (item['kalori'] ?? 0).round();
+              } else if (item['calories'] != null) {
+                kalori = (item['calories'] ?? 0).round();
+              }
               return {
                 'name': item['nama_makanan'] ?? '',
-                'kalori': (nutr['kalori'] ?? 0).round(),
+                'kalori': kalori,
                 'jumlah': item['jumlah'] ?? '',
+                'protein': (nutr['protein'] ?? item['protein'] ?? 0).toDouble(),
+                'lemak': (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble(),
+                'karbohidrat':
+                    (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0)
+                        .toDouble(),
               };
             }).toList()
             : [
-              {'name': 'Nasi', 'kalori': 270, 'jumlah': '150g'},
-              {'name': 'Ayam Pop', 'kalori': 270, 'jumlah': '150g'},
-              {'name': 'Sambal', 'kalori': 270, 'jumlah': '150g'},
+              {
+                'name': 'Nasi',
+                'kalori': 270,
+                'jumlah': '150g',
+                'protein': 4,
+                'lemak': 1,
+                'karbohidrat': 60,
+              },
+              {
+                'name': 'Ayam Pop',
+                'kalori': 270,
+                'jumlah': '150g',
+                'protein': 20,
+                'lemak': 15,
+                'karbohidrat': 0,
+              },
+              {
+                'name': 'Sambal',
+                'kalori': 270,
+                'jumlah': '150g',
+                'protein': 1,
+                'lemak': 2,
+                'karbohidrat': 10,
+              },
             ];
+
+    // Hitung total nutrisi dari seluruh ingredient
+    int totalKalori = 0;
+    double totalKarbo = 0, totalProtein = 0, totalLemak = 0;
+    for (final ing in ingredients) {
+      totalKalori += (ing['kalori'] ?? 0) as int;
+      totalKarbo += (ing['karbohidrat'] ?? 0).toDouble();
+      totalProtein += (ing['protein'] ?? 0).toDouble();
+      totalLemak += (ing['lemak'] ?? 0).toDouble();
+    }
+    final Map<String, dynamic> nutrition = {
+      'calories': totalKalori,
+      'carbs': totalKarbo.round(),
+      'proteins': totalProtein.round(),
+      'fats': totalLemak.round(),
+    };
+    final bool isNutritionZero = nutrition.values.every((v) => v == 0);
+    // Tampilkan warning jika semua nutrisi 0
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.white,
@@ -383,8 +454,9 @@ class _ResultPageState extends State<ResultPage> {
                                 height: 180,
                                 fit: BoxFit.cover,
                                 errorBuilder:
-                                    (context, error, stackTrace) =>
-                                        Image.asset('assets/images/Rename.png'),
+                                    (context, error, stackTrace) => Image.asset(
+                                      'assets/images/placeholder.png',
+                                    ),
                               )
                               : (imageUrl != null
                                   ? Image.network(
@@ -395,11 +467,11 @@ class _ResultPageState extends State<ResultPage> {
                                     errorBuilder:
                                         (context, error, stackTrace) =>
                                             Image.asset(
-                                              'assets/images/Rename.png',
+                                              'assets/images/placeholder.png',
                                             ),
                                   )
                                   : Image.asset(
-                                    'assets/images/Rename.png',
+                                    'assets/images/placeholder.png',
                                     width: double.infinity,
                                     height: 180,
                                     fit: BoxFit.cover,
@@ -538,8 +610,9 @@ class _ResultPageState extends State<ResultPage> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
+                            // Pada ListTile ingredient, subtitle hanya tampilkan kalori dan jumlah
                             subtitle: Text(
-                              '${ing['kalori']} cal\u00A0\u00A0${ing['jumlah']}',
+                              '${ing['kalori']} cal  ${ing['jumlah']}',
                             ),
                             trailing: IconButton(
                               icon: const Icon(
