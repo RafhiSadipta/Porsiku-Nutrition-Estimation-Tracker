@@ -51,9 +51,9 @@ class RecipePage extends StatelessWidget {
                     crossAxisSpacing: 8,
                     childAspectRatio: 0.68,
                   ),
-                  itemCount: _dummyRecipes.length,
+                  itemCount: dummyRecipes.length,
                   itemBuilder: (context, index) {
-                    final recipe = _dummyRecipes[index];
+                    final recipe = dummyRecipes[index];
                     return RecipeCard(recipe: recipe);
                   },
                 ),
@@ -117,7 +117,12 @@ class RecipeCard extends StatelessWidget {
           return Container(
             width: constraints.maxWidth,
             // Kurangi padding bawah agar tidak overflow
-            padding: const EdgeInsets.only(top: 4, left: 4, right: 4, bottom: 8),
+            padding: const EdgeInsets.only(
+              top: 4,
+              left: 4,
+              right: 4,
+              bottom: 8,
+            ),
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: AppColors.white,
@@ -185,7 +190,9 @@ class RecipeCard extends StatelessWidget {
                         height: 30,
                         decoration: BoxDecoration(
                           color: AppColors.black,
-                          borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                          borderRadius: BorderRadius.circular(
+                            AppBorderRadius.sm,
+                          ),
                         ),
                         child: IconButton(
                           icon: Icon(
@@ -224,7 +231,7 @@ class RecipeCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Container(
+                  child: SizedBox(
                     width: double.infinity,
                     child: Wrap(
                       spacing: 4,
@@ -325,7 +332,8 @@ class _NutriPill extends StatelessWidget {
 // Dummy data untuk preview UI
 defaultImage() =>
     'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&h=180&q=80';
-final List<Map<String, dynamic>> _dummyRecipes = [
+// Make _dummyRecipes public for dashboard import
+List<Map<String, dynamic>> dummyRecipes = [
   {
     'image': defaultImage(),
     'duration': '4min',

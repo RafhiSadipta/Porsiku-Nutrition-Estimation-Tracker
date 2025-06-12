@@ -1,21 +1,21 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:porsiku/components/button.dart';
-import 'package:porsiku/constants/constants.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:porsiku/components/section_card.dart';
 import 'package:porsiku/components/navbar.dart';
 import 'package:porsiku/components/calories_progress_indicator.dart';
 import 'package:porsiku/components/nutrient_progress_row.dart';
-import 'package:porsiku/components/recommendation_carousel.dart';
+import 'package:porsiku/view/main/analytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porsiku/service/api_service.dart';
 import 'package:porsiku/view/main/scan.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:porsiku/view/main/result.dart';
-import 'package:porsiku/view/main/audioinput.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:porsiku/view/main/recipe.dart';
-import 'package:porsiku/view/main/analytics.dart';
+import 'package:porsiku/constants/constants.dart';
+import 'package:porsiku/view/main/textinput.dart';
+import 'package:porsiku/view/main/audioinput.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -24,11 +24,48 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
-  final CarouselSliderController _carouselController =
-      CarouselSliderController();
-  int _currentCarouselIndex = 0; // Tambahkan state untuk indeks carousel
+  int _currentCarouselIndex = 0;
+
+  // Tambahan: Timer untuk auto-refresh saat hari berganti
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initDailyTarget();
+    _fetchTodayGoalAndRecentActivity();
+    _fetchRecipeRecommendations();
+    _startMidnightTimer();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _midnightTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _fetchTodayGoalAndRecentActivity();
+    }
+  }
+
+  Timer? _midnightTimer;
+  void _startMidnightTimer() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final duration = tomorrow.difference(now);
+    _midnightTimer = Timer(duration, () {
+      // Setelah tengah malam, refresh data dan restart timer
+      _fetchTodayGoalAndRecentActivity();
+      _startMidnightTimer();
+    });
+  }
 
   Future<String?> _getUserId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -37,11 +74,15 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<Map<String, dynamic>>? _futureDailyTarget;
 
-  @override
-  void initState() {
-    super.initState();
-    _initDailyTarget();
-  }
+  // Tambahkan di dalam _DashboardPageState:
+  Map<String, dynamic> todayGoal = {
+    'calories': {'current': 0, 'target': 0},
+    'protein': {'current': 0, 'target': 0},
+    'fat': {'current': 0, 'target': 0},
+    'carbs': {'current': 0, 'target': 0},
+  };
+  List<Map<String, dynamic>> recentActivity = [];
+  List<Map<String, dynamic>> recipeRecommendations = [];
 
   void _initDailyTarget() async {
     final userId = await _getUserId();
@@ -50,6 +91,83 @@ class _DashboardPageState extends State<DashboardPage> {
         _futureDailyTarget = fetchDailyTarget(userId);
       });
     }
+  }
+
+  Future<void> _fetchTodayGoalAndRecentActivity() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id');
+    final token = prefs.getString('token');
+    if (userId == null || token == null) return;
+    try {
+      // Fetch daily target
+      final targetResp = await http.get(
+        Uri.parse('http://192.168.0.107:8080/api/daily_target/$userId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (targetResp.statusCode == 200) {
+        final data = jsonDecode(targetResp.body);
+        setState(() {
+          todayGoal['calories']['target'] =
+              (data['kalori_harian'] ?? 0).round();
+          todayGoal['protein']['target'] =
+              (data['protein_harian'] ?? 0).round();
+          todayGoal['fat']['target'] = (data['lemak_harian'] ?? 0).round();
+          todayGoal['carbs']['target'] = (data['karbo_harian'] ?? 0).round();
+        });
+      }
+      // Fetch daily consumption summary
+      final konsumsiResp = await http.get(
+        Uri.parse('http://192.168.0.107:8080/api/konsumsi/$userId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (konsumsiResp.statusCode == 200) {
+        final konsumsiData = jsonDecode(konsumsiResp.body);
+        double totalKal = 0, totalPro = 0, totalLem = 0, totalKar = 0;
+        List<Map<String, dynamic>> logs = [];
+        final now = DateTime.now();
+        for (var item in konsumsiData['data'] ?? []) {
+          if (item['soft_deleted'] == true) continue;
+          final tanggalStr = item['tanggal'] ?? '';
+          if (tanggalStr.isEmpty) continue;
+          final tanggal = DateTime.tryParse(tanggalStr)?.toLocal();
+          if (tanggal == null) continue;
+          // Only include logs from today
+          if (tanggal.year == now.year &&
+              tanggal.month == now.month &&
+              tanggal.day == now.day) {
+            totalKal += (item['kalori_total'] ?? 0).toDouble();
+            totalPro += (item['protein_total'] ?? 0).toDouble();
+            totalLem += (item['lemak_total'] ?? 0).toDouble();
+            totalKar += (item['karbohidrat_total'] ?? 0).toDouble();
+            logs.add({
+              'title': item['nama_makanan'] ?? '-',
+              'calories': (item['kalori_total'] ?? 0).round(),
+              'mass': item['waktu_makan'] ?? '',
+              'image':
+                  (item['foto'] != null && item['foto'].toString().isNotEmpty)
+                      ? item['foto']
+                      : 'assets/images/Rename.png',
+              'is_foto': item['is_foto'] ?? false,
+            });
+          }
+        }
+        setState(() {
+          todayGoal['calories']['current'] = totalKal.round();
+          todayGoal['protein']['current'] = totalPro.round();
+          todayGoal['fat']['current'] = totalLem.round();
+          todayGoal['carbs']['current'] = totalKar.round();
+          recentActivity = logs.reversed.toList();
+        });
+      }
+    } catch (e) {
+      // ignore error, optionally show snackbar
+    }
+  }
+
+  Future<void> _fetchRecipeRecommendations() async {
+    setState(() {
+      recipeRecommendations = List<Map<String, dynamic>>.from(dummyRecipes);
+    });
   }
 
   void _onItemTapped(int index) {
@@ -79,32 +197,39 @@ class _DashboardPageState extends State<DashboardPage> {
   void _showAddOptionsDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.white,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppBorderRadius.lg),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
       ),
       builder: (BuildContext context) {
         return Padding(
-          padding: const EdgeInsets.all(
-            AppBorderRadius.lg,
-          ), // Changed from AppPadding.lg
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                "Add Food Entry",
-                style: TextStyle(
-                  fontSize: AppTexts.lg,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black,
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              const SizedBox(
-                height: AppBorderRadius.md,
-              ), // Changed from AppPadding.md
+              Center(
+                child: Text(
+                  "Add Food Entry",
+                  style: TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16.0),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: <Widget>[
@@ -112,32 +237,36 @@ class _DashboardPageState extends State<DashboardPage> {
                     context,
                     icon: Icons.camera_alt_outlined,
                     label: "Capture",
-                    onTap: () {
-                      Navigator.of(context).push(
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final result = await Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => const ScanPage(),
                         ),
                       );
+                      if (result == 'refresh') {
+                        _fetchTodayGoalAndRecentActivity();
+                      }
                     },
                   ),
                   _buildDialogOption(
                     context,
-                    icon: Icons.text_fields_outlined,
+                    icon: Icons.text_fields,
                     label: "Text",
-                    onTap: () {
-                      Navigator.pop(context); // Close the options dialog first
-                      _showTextInputDialog(
-                        context,
-                      ); // Then show the text input dialog
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await TextInputPage.show(context);
+                      _fetchTodayGoalAndRecentActivity();
                     },
                   ),
                   _buildDialogOption(
                     context,
                     icon: Icons.mic_none_outlined,
                     label: "Speech",
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(context);
-                      _showSimpleVoiceInputDialog(context);
+                      await AudioInputPage.show(context);
+                      _fetchTodayGoalAndRecentActivity();
                     },
                   ),
                   _buildDialogOption(
@@ -152,157 +281,12 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 ],
               ),
-              const SizedBox(
-                height: AppBorderRadius.md,
-              ), // Changed from AppPadding.md
+              const SizedBox(height: 16.0),
             ],
           ),
         );
       },
     );
-  }
-
-  void _showTextInputDialog(BuildContext context) {
-    final TextEditingController textController = TextEditingController();
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-              ),
-              backgroundColor: AppColors.white,
-              contentPadding: const EdgeInsets.all(AppBorderRadius.lg),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: AppColors.grey),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ),
-                  TextField(
-                    controller: textController,
-                    autofocus: true,
-                    enabled: true,
-                    decoration: InputDecoration(
-                      hintText: "What do you eat today?",
-                      hintStyle: TextStyle(color: AppColors.grey),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(color: AppColors.lightGrey),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(color: AppColors.blue),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppBorderRadius.md,
-                        vertical: AppBorderRadius.sm,
-                      ),
-                    ),
-                    onSubmitted: (_) {
-                      _submitFoodInput(dialogContext, textController, setState);
-                    },
-                  ),
-                  const SizedBox(height: AppBorderRadius.lg),
-                  Button(
-                    text: "Confirm",
-                    variant: ButtonVariant.primary,
-                    onPressed: () {
-                      _submitFoodInput(dialogContext, textController, setState);
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _submitFoodInput(
-    BuildContext dialogContext,
-    TextEditingController textController,
-    void Function(void Function()) setState,
-  ) async {
-    final foodText = textController.text.trim();
-    if (foodText.isEmpty || foodText.replaceAll(',', '').trim().isEmpty) {
-      ScaffoldMessenger.of(dialogContext).showSnackBar(
-        const SnackBar(content: Text('Input makanan tidak boleh kosong.')),
-      );
-      return;
-    }
-    // Remove isLoading usage for now to fix undefined errors
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-      final foodListArr =
-          foodText
-              .split(',')
-              .map((e) => e.trim())
-              .where((e) => e.isNotEmpty)
-              .toList();
-      final response = await http
-          .post(
-            Uri.parse('http://192.168.100.110:8080/api/nutri-estimation'),
-            headers: <String, String>{
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({'food_list': foodListArr}),
-          )
-          .timeout(const Duration(seconds: 30));
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> respJson = jsonDecode(response.body);
-        var nutritionResult = respJson['result'];
-        if (nutritionResult == null || nutritionResult is! List) {
-          throw Exception('Format hasil estimasi tidak valid');
-        }
-        if (nutritionResult.isEmpty) {
-          ScaffoldMessenger.of(dialogContext).showSnackBar(
-            const SnackBar(content: Text('Tidak ada hasil estimasi gizi.')),
-          );
-          return;
-        }
-        Navigator.of(dialogContext).pop();
-        Navigator.of(dialogContext).push(
-          MaterialPageRoute(
-            builder:
-                (_) => ResultPage(
-                  foodListText: foodText,
-                  nutritionResult: nutritionResult,
-                  imagePath: '',
-                ),
-          ),
-        );
-      } else {
-        throw Exception('Estimasi nutrisi gagal: ${response.body}');
-      }
-    } catch (e, stack) {
-      ScaffoldMessenger.of(dialogContext).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Gagal estimasi nutrisi: ${e.toString()}\n${stack.toString().split("\n").first}',
-          ),
-          duration: const Duration(seconds: 8),
-        ),
-      );
-    }
-  }
-
-  void _showSimpleVoiceInputDialog(BuildContext context) {
-    showAudioInputDialog(context);
   }
 
   Widget _buildDialogOption(
@@ -313,39 +297,24 @@ class _DashboardPageState extends State<DashboardPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppBorderRadius.md),
+      borderRadius: BorderRadius.circular(8.0),
       child: Padding(
-        padding: const EdgeInsets.all(
-          AppBorderRadius.sm,
-        ), // Changed from AppPadding.sm
+        padding: const EdgeInsets.all(8.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Container(
-              padding: const EdgeInsets.all(
-                AppBorderRadius.md,
-              ), // Changed from AppPadding.md
+              padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                color: AppColors.lightGrey.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(
-                  AppBorderRadius.lg,
-                ), // Changed from AppBorderRadius.xl to AppBorderRadius.lg
+                color: Colors.grey.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16.0),
               ),
-              child: Icon(
-                icon,
-                size: AppIcons.xl,
-                color: AppColors.blue,
-              ), // Changed from AppColors.primary to AppColors.blue
+              child: Icon(icon, size: 24.0, color: Colors.blue),
             ),
-            const SizedBox(
-              height: AppBorderRadius.sm / 2,
-            ), // Changed from AppPadding.xs to AppBorderRadius.sm / 2 for smaller gap
+            const SizedBox(height: 8.0),
             Text(
               label,
-              style: TextStyle(
-                fontSize: AppTexts.sm,
-                color: AppColors.darkGrey,
-              ),
+              style: TextStyle(fontSize: 14.0, color: Colors.black54),
             ),
           ],
         ),
@@ -356,46 +325,19 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: AppElevations.none,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: AppColors.black),
-          onPressed: () {
-            // TODO: Implement drawer opening or other menu action
-            // Scaffold.of(context).openDrawer();
-          },
+      backgroundColor: Colors.grey[100],
+      body: SafeArea(
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            _buildDashboardContent(),
+            const RecipePage(),
+            Container(), // This corresponds to index 2, which is 'Add'
+            const AnalyticsPage(),
+            // Placeholder for More/Profile Page (index 4)
+            // Container(child: Center(child: Text("More/Profile Page"))),
+          ],
         ),
-        title: Text(
-          'PorsiKu',
-          style: TextStyle(
-            color: AppColors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: AppTexts.lg, // Ensure consistent text size
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_outlined,
-              color: AppColors.black, // Use AppColors
-            ),
-            onPressed: () {
-              // TODO: Implement notification functionality
-            },
-          ),
-        ],
-      ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          _buildDashboardContent(),
-          const RecipePage(),
-          Container(), // This corresponds to index 2, which is 'Add'
-          const AnalyticsPage(),
-          // Placeholder for More/Profile Page (index 4)
-          // Container(child: Center(child: Text("More/Profile Page"))),
-        ],
       ),
       bottomNavigationBar: CustomBottomNavbar(
         selectedIndex: _selectedIndex,
@@ -410,118 +352,49 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Text('User ID tidak ditemukan. Silakan login ulang.'),
       );
     }
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _futureDailyTarget,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: \\${snapshot.error}'));
-        }
-        final data = snapshot.data ?? {};
-        final String userName = "Abyan"; // Ganti dengan data user jika ada
-        final Map<String, dynamic> todayGoal = {
-          'calories': {'current': 0, 'target': data['kalori_harian'] ?? 2000},
-          'protein': {'current': 0, 'target': data['protein_harian'] ?? 50},
-          'fat': {'current': 0, 'target': data['lemak_harian'] ?? 50},
-          'carbs': {'current': 0, 'target': data['karbo_harian'] ?? 180},
-        };
-
-        final List<Map<String, dynamic>> recommendations = [
-          {
-            'image':
-                'assets/images/Rename.png', // Placeholder, replace with actual image path
-            'title': 'Telur Dadar Elite',
-            'calories': 120,
-            'protein': 21,
-            'carbs': 50, // Assuming this is carbs based on image
-            'fat': 8,
-            'time': '8min',
-          },
-          {
-            'image': 'assets/images/Rename.png', // Placeholder
-            'title': 'Healthy Salad',
-            'calories': 350,
-            'protein': 15,
-            'carbs': 30,
-            'fat': 20,
-            'time': '10min',
-          },
-        ];
-
-        final List<Map<String, dynamic>> recentActivity = [
-          {
-            'title': 'Nasi Padang',
-            'calories': 270,
-            'mass': '150g',
-            'image': 'assets/images/Rename.png', // Placeholder
-          },
-          {
-            'title': 'Declan Rice',
-            'calories': 270, // Assuming this is a food item, if not, adjust
-            'mass': '1 serving',
-            'image':
-                'assets/images/Rename.png', // Placeholder, ensure it's a food image
-          },
-        ];
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppBorderRadius.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Selamat Pagi, $userName!',
-                style: TextStyle(
-                  fontSize: AppTexts.xl,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black,
-                ),
-              ),
-              const SizedBox(height: AppBorderRadius.sm / 2),
-              Text(
-                'Track your progress and stay healthy.',
-                style: TextStyle(
-                  fontSize: AppTexts.md,
-                  color: AppColors.darkGrey,
-                ),
-              ),
-              const SizedBox(height: AppBorderRadius.lg),
-              SectionCard(
-                title: "Today's Goal",
-                contentChild: _buildTodayGoalContent(todayGoal),
-              ),
-              const SizedBox(height: AppBorderRadius.lg),
-              SectionCard(
-                title: "Breakfast Recommendation",
-                contentChild: _buildRecommendationContent(recommendations),
-              ),
-              const SizedBox(height: AppBorderRadius.lg),
-              SectionCard(
-                title: "Recent Activity",
-                contentChild: _buildRecentActivityContent(recentActivity),
-              ),
-              const SizedBox(height: AppBorderRadius.lg),
-              Button(
-                text: "Scan Makanan",
-                variant: ButtonVariant.primary, // Added variant
-                onPressed: () {
-                  _onItemTapped(2); // Assuming index 2 is for scan/add
-                },
-              ),
-              const SizedBox(height: AppBorderRadius.sm),
-              Button(
-                text: "Lihat Detail Gizi",
-                variant: ButtonVariant.secondary, // Added variant
-                onPressed: () {
-                  // TODO: Implement navigation to nutrition details
-                },
-              ),
-            ],
-          ),
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _fetchTodayGoalAndRecentActivity();
       },
+      child: FutureBuilder<Map<String, dynamic>>(
+        future: _futureDailyTarget,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: \\${snapshot.error}'));
+          }
+
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16.0),
+                SectionCard(
+                  title: "Today's Goal",
+                  contentChild: _buildTodayGoalContent(todayGoal),
+                ),
+                const SizedBox(height: 16.0),
+                SectionCard(
+                  title: "Recipe Recommendation",
+                  contentChild: _buildRecommendationContent(
+                    recipeRecommendations,
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+                SectionCard(
+                  title: "Recent Activity",
+                  contentChild: _buildRecentActivityContent(recentActivity),
+                ),
+                const SizedBox(height: 16.0),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -554,21 +427,21 @@ class _DashboardPageState extends State<DashboardPage> {
                 title: 'Protein',
                 currentValue: toDouble(todayGoal['protein']['current']).toInt(),
                 targetValue: toDouble(todayGoal['protein']['target']).toInt(),
-                progressColor: AppColors.red,
+                progressColor: Colors.red,
               ),
               const SizedBox(height: 8),
               NutrientProgressRow(
                 title: 'Fat',
                 currentValue: toDouble(todayGoal['fat']['current']).toInt(),
                 targetValue: toDouble(todayGoal['fat']['target']).toInt(),
-                progressColor: AppColors.green,
+                progressColor: Colors.green,
               ),
               const SizedBox(height: 8),
               NutrientProgressRow(
                 title: 'Carbs',
                 currentValue: toDouble(todayGoal['carbs']['current']).toInt(),
                 targetValue: toDouble(todayGoal['carbs']['target']).toInt(),
-                progressColor: AppColors.yellow,
+                progressColor: Colors.yellow,
               ),
             ],
           ),
@@ -580,9 +453,24 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildRecommendationContent(
     List<Map<String, dynamic>> recommendations,
   ) {
-    return RecommendationCarousel(
+    if (recommendations.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Text(
+            "No recipe recommendations available at the moment.",
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 16.0,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    return _RecipeCarousel(
       recommendations: recommendations,
-      carouselController: _carouselController,
       currentCarouselIndex: _currentCarouselIndex,
       onPageChanged: (index, reason) {
         setState(() {
@@ -596,7 +484,20 @@ class _DashboardPageState extends State<DashboardPage> {
     List<Map<String, dynamic>> recentActivity,
   ) {
     if (recentActivity.isEmpty) {
-      return const SizedBox.shrink();
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Text(
+            "You don't have any meal log yet. Capture your meal now!",
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 16.0,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
     }
     return ListView.separated(
       shrinkWrap: true,
@@ -604,17 +505,51 @@ class _DashboardPageState extends State<DashboardPage> {
       itemCount: recentActivity.length,
       itemBuilder: (context, index) {
         final activity = recentActivity[index];
+        final isFoto = activity['is_foto'] == true;
+        final image = activity['image'] ?? 'assets/images/Rename.png';
+        Widget imageWidget;
+        if (isFoto && image.toString().startsWith('http')) {
+          imageWidget = Image.network(
+            image,
+            width: 50,
+            height: 50,
+            fit: BoxFit.cover,
+            errorBuilder:
+                (context, error, stackTrace) => Image.asset(
+                  'assets/images/Rename.png',
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                ),
+          );
+        } else if (isFoto &&
+            image.toString().isNotEmpty &&
+            !image.toString().startsWith('http')) {
+          imageWidget = Image.file(
+            File(image),
+            width: 50,
+            height: 50,
+            fit: BoxFit.cover,
+            errorBuilder:
+                (context, error, stackTrace) => Image.asset(
+                  'assets/images/Rename.png',
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                ),
+          );
+        } else {
+          imageWidget = Image.asset(
+            'assets/images/Rename.png',
+            width: 50,
+            height: 50,
+            fit: BoxFit.cover,
+          );
+        }
         return ListTile(
           leading: ClipRRect(
-            borderRadius: BorderRadius.circular(
-              AppBorderRadius.sm,
-            ), // Rounded image corners
-            child: Image.asset(
-              activity['image']! as String,
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
-            ),
+            borderRadius: BorderRadius.circular(8.0),
+            child: imageWidget,
           ),
           title: Text(
             activity['title']! as String,
@@ -622,24 +557,190 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           subtitle: Text('${activity['calories']} cal, ${activity['mass']}'),
           trailing: IconButton(
-            icon: Icon(Icons.close, color: AppColors.grey, size: AppTexts.lg),
+            icon: Icon(Icons.close, color: Colors.grey, size: 20.0),
             onPressed: () {
               // TODO: Implement delete recent activity
               setState(() {
-                // This is a placeholder for actual deletion logic
-                // For example, if recentActivity is a state variable:
                 // recentActivity.removeAt(index);
               });
             },
           ),
-          contentPadding:
-              EdgeInsets
-                  .zero, // Remove default ListTile padding if SectionCard handles it
+          contentPadding: EdgeInsets.zero,
         );
       },
       separatorBuilder:
-          (context, index) =>
-              const Divider(height: 1, indent: 66), // Add a divider with indent
+          (context, index) => const Divider(height: 1, indent: 66),
+    );
+  }
+}
+
+class _RecipeCarousel extends StatelessWidget {
+  final List<Map<String, dynamic>> recommendations;
+  final int currentCarouselIndex;
+  final Function(int, CarouselPageChangedReason) onPageChanged;
+
+  const _RecipeCarousel({
+    required this.recommendations,
+    required this.currentCarouselIndex,
+    required this.onPageChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        CarouselSlider(
+          options: CarouselOptions(
+            height: 200.0,
+            autoPlay: false,
+            enlargeCenterPage: false,
+            viewportFraction: 0.9,
+            aspectRatio: 2.0,
+            onPageChanged: onPageChanged,
+          ),
+          items:
+              recommendations.map((rec) {
+                return Builder(
+                  builder: (BuildContext context) {
+                    return Container(
+                      width: MediaQuery.of(context).size.width,
+                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        image: DecorationImage(
+                          image: NetworkImage(rec['image']),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.5),
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(
+                                    AppBorderRadius.md,
+                                  ),
+                                  bottomRight: Radius.circular(
+                                    AppBorderRadius.md,
+                                  ),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    rec['title'],
+                                    style: TextStyle(
+                                      fontSize: AppTexts.md,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${rec['calories']}cal',
+                                        style: TextStyle(
+                                          fontSize: AppTexts.sm,
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${rec['protein']}g Prot',
+                                        style: TextStyle(
+                                          fontSize: AppTexts.sm,
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${rec['weight']}g',
+                                        style: TextStyle(
+                                          fontSize: AppTexts.sm,
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${rec['fiber']}g Fiber',
+                                        style: TextStyle(
+                                          fontSize: AppTexts.sm,
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (rec['duration'] != null)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(
+                                    AppBorderRadius.sm,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.timer_outlined,
+                                      color: AppColors.white,
+                                      size: AppTexts.sm,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      rec['duration'],
+                                      style: TextStyle(
+                                        fontSize: AppTexts.xs,
+                                        color: AppColors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }).toList(),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(recommendations.length, (index) {
+            bool isActive = index == currentCarouselIndex;
+            return Container(
+              width: isActive ? AppBorderRadius.lg : AppBorderRadius.sm,
+              height: AppBorderRadius.sm,
+              margin: const EdgeInsets.symmetric(horizontal: 4.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppBorderRadius.infinity),
+                color: isActive ? AppColors.black : AppColors.lightGrey,
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }

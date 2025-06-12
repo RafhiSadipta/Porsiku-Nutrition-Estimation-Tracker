@@ -1,204 +1,263 @@
 import 'package:flutter/material.dart';
-import 'package:record/record.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http_parser/http_parser.dart';
 import 'package:porsiku/view/main/result.dart';
+import 'dart:io';
 
-Future<void> showAudioInputDialog(BuildContext context) async {
-  final Record audioRecorder = Record();
-  bool isRecording = false;
-  String statusText = "Mengecek izin akses mikrofon...";
-  bool permissionChecked = false;
+class AudioInputPage extends StatefulWidget {
+  const AudioInputPage({super.key});
 
-  Future<void> updatePermissionStatus(StateSetter setState) async {
-    final hasPermission = await audioRecorder.hasPermission();
-    setState(() {
-      statusText =
-          hasPermission
-              ? "Tekan tombol mic untuk mulai merekam."
-              : "Izin akses mikrofon ditolak.";
-    });
+  // Tambahkan static show() agar bisa dipanggil sebagai dialog overlay
+  static Future<void> show(BuildContext context) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder:
+          (ctx) => const Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.all(0),
+            child: AudioInputPage(),
+          ),
+    );
   }
 
-  Future<void> sendAudioToServer(BuildContext context, String filePath) async {
+  @override
+  State<AudioInputPage> createState() => _AudioInputPageState();
+}
+
+class _AudioInputPageState extends State<AudioInputPage> {
+  FlutterSoundRecorder? _recorder;
+  bool _isRecording = false;
+  bool _isLoading = false;
+  String? _audioPath;
+  String? _transcript;
+  String? _errorMsg;
+
+  @override
+  void initState() {
+    super.initState();
+    _recorder = FlutterSoundRecorder();
+    _initRecorder();
+  }
+
+  Future<void> _initRecorder() async {
+    // Hanya cek permission microphone (storage tidak perlu di Android 13+)
+    final micStatus = await Permission.microphone.request();
+    if (!micStatus.isGranted) {
+      setState(() {
+        _errorMsg = 'Izin microphone diperlukan.';
+      });
+      return;
+    }
+    await _recorder!.openRecorder();
+  }
+
+  @override
+  void dispose() {
+    _recorder?.closeRecorder();
+    _recorder = null;
+    super.dispose();
+  }
+
+  Future<void> _startRecording() async {
+    setState(() {
+      _errorMsg = null;
+    });
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-      if (token.isEmpty) {
-        throw Exception('Token login tidak ditemukan, silakan login ulang.');
-      }
-
-      final file = File(filePath);
-      if (!file.existsSync() || file.lengthSync() == 0) {
-        throw Exception('File audio tidak ditemukan atau kosong.');
-      }
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
-
-      // === STEP 1: Kirim ke detect_food
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://192.168.100.110:8080/api/detect_food'),
-      );
-      request.headers['Authorization'] = 'Bearer $token';
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'media',
-          filePath,
-          contentType: MediaType.parse('audio/m4a'),
-        ),
-      );
-
-      var streamedResponse = await request.send().timeout(
-        const Duration(seconds: 30),
-      );
-      var response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode != 200) {
-        Navigator.of(context).pop();
-        throw Exception('Gagal mendeteksi makanan: ${response.body}');
-      }
-
-      final decoded = jsonDecode(response.body);
-      final foodListText = decoded['transkrip']?.toString() ?? '';
-      if (foodListText.isEmpty) {
-        Navigator.of(context).pop();
-        throw Exception('Tidak ada makanan terdeteksi.');
-      }
-
-      // === STEP 2: Kirim ke nutri-estimation
-      var nutriResponse = await http
-          .post(
-            Uri.parse('http://192.168.100.110:8080/api/nutri-estimation'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({'food_list': foodListText}),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (nutriResponse.statusCode != 200) {
-        Navigator.of(context).pop();
-        throw Exception('Estimasi nutrisi gagal: ${nutriResponse.body}');
-      }
-
-      var decodedNutri = jsonDecode(nutriResponse.body);
-      var nutritionResult = decodedNutri['result'];
-
-      if (nutritionResult == null || nutritionResult is! List) {
-        Navigator.of(context).pop();
-        throw Exception('Format hasil estimasi tidak valid.');
-      }
-
-      Navigator.of(context).pop(); // Tutup loading
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder:
-              (_) => ResultPage(
-                foodListText: foodListText,
-                nutritionResult: nutritionResult,
-                imagePath: filePath,
-              ),
-        ),
-      );
+      final dir = await getTemporaryDirectory();
+      final filePath =
+          '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.aac';
+      await _recorder!.startRecorder(toFile: filePath, codec: Codec.aacADTS);
+      setState(() {
+        _isRecording = true;
+        _audioPath = filePath;
+      });
     } catch (e) {
-      Navigator.of(context).pop(); // Tutup loading jika error
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      setState(() {
+        _errorMsg = 'Gagal mulai merekam: $e';
+      });
     }
   }
 
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (BuildContext dialogContext) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          if (!permissionChecked) {
-            permissionChecked = true;
-            updatePermissionStatus(setState);
-          }
+  Future<void> _stopRecording() async {
+    try {
+      await _recorder!.stopRecorder();
+      setState(() {
+        _isRecording = false;
+      });
+      if (_audioPath != null) {
+        // Cek file benar-benar ada sebelum proses
+        final file = File(_audioPath!);
+        if (!await file.exists()) {
+          setState(() {
+            _errorMsg = 'File audio tidak ditemukan. Coba ulangi.';
+          });
+          return;
+        }
+        await _processAudio(_audioPath!);
+      }
+    } catch (e) {
+      setState(() {
+        _errorMsg = 'Gagal stop rekaman: $e';
+      });
+    }
+  }
 
-          return AlertDialog(
-            title: const Text("Input Audio"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(statusText),
-                IconButton(
-                  icon: Icon(isRecording ? Icons.stop : Icons.mic),
-                  iconSize: 48,
-                  color: isRecording ? Colors.red : Colors.blue,
-                  onPressed:
-                      statusText.contains("Tekan")
-                          ? () async {
-                            final directory =
-                                await getApplicationDocumentsDirectory();
-                            final timestamp =
-                                DateTime.now().millisecondsSinceEpoch;
-                            final tempPath =
-                                "${directory.path}/audio_$timestamp.m4a";
-
-                            if (isRecording) {
-                              final recordedPath = await audioRecorder.stop();
-                              setState(() {
-                                isRecording = false;
-                                statusText = "Rekaman selesai. Mengirim...";
-                              });
-                              if (recordedPath != null &&
-                                  recordedPath.isNotEmpty) {
-                                await sendAudioToServer(context, recordedPath);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Gagal menyimpan rekaman audio',
-                                    ),
-                                  ),
-                                );
-                              }
-                            } else {
-                              await audioRecorder.start(
-                                path: tempPath,
-                                encoder: AudioEncoder.aacLc,
-                                bitRate: 128000,
-                                samplingRate: 44100,
-                              );
-                              setState(() {
-                                isRecording = true;
-                                statusText =
-                                    "Merekam... Tekan lagi untuk berhenti.";
-                              });
-                            }
-                          }
-                          : null,
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  if (isRecording) {
-                    await audioRecorder.stop();
-                  }
-                  Navigator.of(dialogContext).pop();
-                },
-                child: const Text("Tutup"),
-              ),
-            ],
-          );
-        },
+  Future<void> _processAudio(String path) async {
+    setState(() {
+      _isLoading = true;
+      _transcript = null;
+      _errorMsg = null;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://192.168.0.107:8080/api/detect_food'),
       );
-    },
-  );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(await http.MultipartFile.fromPath('audio', path));
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200) {
+        final respJson = jsonDecode(response.body);
+        // TODO: Tampilkan transkrip
+
+        // Kirim transcript ke nutri-estimation
+        final transcript = respJson['transcript'] ?? '';
+        setState(() {
+          _transcript = transcript;
+        });
+        if (transcript.isEmpty) {
+          setState(() {
+            _errorMsg = 'Tidak ada makanan terdeteksi dari suara.';
+            _isLoading = false;
+          });
+          return;
+        }
+        final foodListArr =
+            transcript
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+        final nutriResp = await http.post(
+          Uri.parse('http://192.168.0.107:8080/api/nutri-estimation'),
+          headers: <String, String>{
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({'food_list': foodListArr}),
+        );
+        if (nutriResp.statusCode == 200) {
+          final nutriJson = jsonDecode(nutriResp.body);
+          var nutritionResult = nutriJson['result'];
+          if (nutritionResult == null || nutritionResult is! List) {
+            throw Exception('Format hasil estimasi tidak valid');
+          }
+          if (nutritionResult.isEmpty) {
+            setState(() {
+              _errorMsg = 'Tidak ada makanan terdeteksi.';
+              _isLoading = false;
+            });
+            return;
+          }
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder:
+                  (_) => ResultPage(
+                    foodListText: transcript,
+                    nutritionResult: nutritionResult,
+                    imagePath: _audioPath ?? '',
+                  ),
+            ),
+          );
+        } else {
+          throw Exception('Estimasi nutrisi gagal: \\${nutriResp.body}');
+        }
+      } else {
+        throw Exception('Gagal transkripsi audio: ${response.body}');
+      }
+    } catch (e) {
+      setState(() {
+        _errorMsg = 'Gagal proses audio: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Ganti Scaffold dengan Material transparan agar overlay
+    return Material(
+      color: Colors.transparent,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 40),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Tekan tombol mic dan sebutkan makanan yang dikonsumsi',
+                style: TextStyle(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              if (_transcript != null)
+                Column(
+                  children: [
+                    const Text(
+                      'Transkrip:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(_transcript!, textAlign: TextAlign.center),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              if (_errorMsg != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    _errorMsg!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              IconButton(
+                iconSize: 64,
+                icon: Icon(
+                  _isRecording ? Icons.stop_circle : Icons.mic,
+                  color: Colors.black,
+                ),
+                onPressed:
+                    _isLoading
+                        ? null
+                        : _isRecording
+                        ? _stopRecording
+                        : _startRecording,
+              ),
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: CircularProgressIndicator(),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -44,7 +44,6 @@ class Button extends StatelessWidget {
         );
         break;
       case ButtonVariant.primary:
-      default:
         bgColor = customBackgroundColor ?? AppColors.black;
         textColor = customTextColor ?? AppColors.white;
         borderSide = null;

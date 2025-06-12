@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -14,6 +16,7 @@ import (
 func CreateKonsumsi(c *gin.Context) {
 	var req models.Konsumsi
 	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Printf("JSON BIND ERROR: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Request tidak valid"})
 		return
 	}

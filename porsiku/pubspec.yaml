@@ -14,12 +14,12 @@ dependencies:
   flutter_spinkit: ^5.1.0
   flutter_secure_storage: ^9.0.0
   cupertino_icons: ^1.0.8
-  carousel_slider: ^5.0.0
+  carousel_slider: any
 
   # Scan & capture
   image_picker: ^1.1.2
   camera: ^0.11.1
-  permission_handler: ^11.2.0
+  permission_handler: ^12.0.0+1
   gal: ^2.3.1
   shared_preferences: ^2.5.3
   http_parser: ^4.1.2
@@ -34,7 +34,8 @@ dependencies:
   record:
     path: ./record_fix
 
-  path_provider: ^2.0.11
+  path_provider: ^2.1.5
+  flutter_sound: ^9.28.0
 
 dev_dependencies:
   flutter_test:

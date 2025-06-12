@@ -24,8 +24,9 @@ class _ViewImagePageState extends State<ViewImagePage> {
       // Ambil token dari SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
-      if (token.isEmpty)
+      if (token.isEmpty) {
         throw Exception('Token login tidak ditemukan, silakan login ulang.');
+      }
       // Cek file gambar sebelum upload
       final file = File(widget.imagePath);
       if (!file.existsSync() || file.lengthSync() == 0) {
@@ -34,7 +35,7 @@ class _ViewImagePageState extends State<ViewImagePage> {
       // 1. Send image to /api/detect_food
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.100.110:8080/api/detect_food'),
+        Uri.parse('http://192.168.0.107:8080/api/detect_food'),
       );
       request.headers['Authorization'] = 'Bearer $token';
       // Tentukan content-type manual
@@ -67,7 +68,7 @@ class _ViewImagePageState extends State<ViewImagePage> {
       // 2. Send food list to /api/nutri-estimation
       var nutriResponse = await http
           .post(
-            Uri.parse('http://192.168.100.110:8080/api/nutri-estimation'),
+            Uri.parse('http://192.168.0.107:8080/api/nutri-estimation'),
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $token',
@@ -75,8 +76,9 @@ class _ViewImagePageState extends State<ViewImagePage> {
             body: jsonEncode({'food_list': foodListText}),
           )
           .timeout(const Duration(seconds: 30));
-      if (nutriResponse.statusCode != 200)
+      if (nutriResponse.statusCode != 200) {
         throw Exception('Nutrition estimation failed');
+      }
       // Extract JSON array from Markdown code block
       String nutriBody = nutriResponse.body;
       RegExp codeBlock = RegExp(r'```json\n([\s\S]*?)\n```');
@@ -92,8 +94,9 @@ class _ViewImagePageState extends State<ViewImagePage> {
       }
       if (jsonStr == null) throw Exception('Could not extract nutrition JSON');
       var nutritionResult = jsonDecode(jsonStr);
-      if (nutritionResult == null || nutritionResult is! List)
+      if (nutritionResult == null || nutritionResult is! List) {
         throw Exception('Invalid nutrition result');
+      }
 
       // 3. Tambahkan log konsumsi ke backend
       final idUser = prefs.getString('user_id') ?? '';
@@ -127,7 +130,7 @@ class _ViewImagePageState extends State<ViewImagePage> {
       bool isFoto = true;
       // Kirim ke backend
       final konsumsiResponse = await http.post(
-        Uri.parse('http://192.168.100.110:8080/api/konsumsi'),
+        Uri.parse('http://192.168.0.107:8080/api/konsumsi'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -153,7 +156,7 @@ class _ViewImagePageState extends State<ViewImagePage> {
       }
 
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
+      await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder:
               (_) => ResultPage(

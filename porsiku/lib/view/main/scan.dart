@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,7 +7,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'viewimage.dart';
 import 'result.dart';
 
@@ -128,7 +126,7 @@ class _ScanPageState extends State<ScanPage> {
       }
 
       final uri = Uri.parse(
-        'http://192.168.100.110:8080/api/produk?barcode=$barcode',
+        'http://192.168.0.107:8080/api/produk?barcode=$barcode',
       );
 
       final response = await http.get(
@@ -141,30 +139,49 @@ class _ScanPageState extends State<ScanPage> {
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
+        final nutrition = decoded['nutrition'] ?? {};
+        final mapped = {
+          'nama_makanan':
+              decoded['nama_makanan'] ??
+              decoded['name'] ??
+              decoded['product_name'] ??
+              'Unknown Product',
+          'image_url': decoded['image_url'] ?? '',
+          'nutrition_total': {
+            'kalori': nutrition['kalori'] ?? 0,
+            'karbohidrat': nutrition['karbohidrat'] ?? 0,
+            'protein': nutrition['protein'] ?? 0,
+            'lemak': nutrition['lemak'] ?? 0,
+          },
+        };
 
-        // Cek apakah response berupa Map<String, dynamic>
-        if (decoded != null && decoded is Map<String, dynamic>) {
-          if (!mounted) return;
+        final isZeroNutrition =
+            (mapped['nutrition_total']['kalori'] == 0 &&
+                mapped['nutrition_total']['karbohidrat'] == 0 &&
+                mapped['nutrition_total']['protein'] == 0 &&
+                mapped['nutrition_total']['lemak'] == 0);
 
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder:
-                  (_) => ResultPage(
-                    foodListText: 'Ditemukan dari barcode',
-                    nutritionResult: [decoded], // Bungkus Map jadi List
-                    imagePath: '',
-                  ),
-            ),
+        if (!mounted) return;
+
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder:
+                (_) => ResultPage(
+                  foodListText: mapped['nama_makanan'],
+                  nutritionResult: [mapped],
+                  imagePath: '',
+                ),
+          ),
+        );
+        if (isZeroNutrition) {
+          _showMessage(
+            'Nutrisi tidak ditemukan untuk produk ini. Data akan tetap disimpan, namun nilai nutrisi 0.',
           );
-        } else {
-          _showMessage('Format data tidak valid');
         }
       } else if (response.statusCode == 401) {
         _showMessage('Tidak terautentikasi. Silakan login kembali.');
-      } else if (response.statusCode == 404) {
-        _showMessage('Produk tidak ditemukan');
       } else {
-        _showMessage('Terjadi kesalahan: ${response.statusCode}');
+        _showMessage('Terjadi kesalahan: \\${response.statusCode}');
       }
     } catch (e) {
       _showMessage('Gagal menghubungi server: $e');
