@@ -54,7 +54,7 @@ class _TextInputPageState extends State<TextInputPage> {
               .toList();
       final response = await http
           .post(
-            Uri.parse('http://192.168.0.107:8080/api/nutri-estimation'),
+            Uri.parse('http://10.125.170.253:8080/api/nutri-estimation'),
             headers: <String, String>{
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $token',

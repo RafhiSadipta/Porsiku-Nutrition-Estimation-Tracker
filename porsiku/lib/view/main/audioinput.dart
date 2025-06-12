@@ -119,7 +119,7 @@ class _AudioInputPageState extends State<AudioInputPage> {
       final token = prefs.getString('token') ?? '';
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.0.107:8080/api/detect_food'),
+        Uri.parse('http://10.125.170.253:8080/api/detect_food'),
       );
       request.headers['Authorization'] = 'Bearer $token';
       request.files.add(await http.MultipartFile.fromPath('audio', path));
@@ -148,7 +148,7 @@ class _AudioInputPageState extends State<AudioInputPage> {
                 .where((e) => e.isNotEmpty)
                 .toList();
         final nutriResp = await http.post(
-          Uri.parse('http://192.168.0.107:8080/api/nutri-estimation'),
+          Uri.parse('http://10.125.170.253:8080/api/nutri-estimation'),
           headers: <String, String>{
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',

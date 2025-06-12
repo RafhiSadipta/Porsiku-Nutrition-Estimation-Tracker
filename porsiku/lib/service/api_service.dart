@@ -14,7 +14,7 @@ Future<Map<String, dynamic>> fetchDailyTarget(String userId) async {
 
   final response = await http.get(
     Uri.parse(
-      'http://192.168.0.107:8080/api/daily_target/$userId',
+      'http://10.125.170.253:8080/api/daily_target/$userId',
     ), // 10.0.2.2 untuk Android emulator
     headers: headers,
   );
