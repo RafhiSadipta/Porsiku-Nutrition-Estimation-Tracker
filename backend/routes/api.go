@@ -30,6 +30,7 @@ func SetupRoutes() *gin.Engine {
 		api.GET("/daily_target/:id", controllers.GetDailyTargetByUserId)
 		api.POST("/detect_food", controllers.DetectFoodHandler)
 		api.POST("/nutri-estimation", controllers.CalculateNutritionHandler)
+
 		api.POST("/konsumsi", controllers.CreateKonsumsi)
 		api.GET("/konsumsi", controllers.GetAllKonsumsi)
 		api.GET("/konsumsi/:id_user", controllers.GetKonsumsiByUserID)
@@ -42,6 +43,9 @@ func SetupRoutes() *gin.Engine {
 		// api.GET("/resep/ingredient", controllers.SearchByIngredients)
 		api.GET("/resep-detil", controllers.GetRecipeDetailHandler)
 		api.GET("/produk", controllers.GetProductFromBarcodeHandler)
+
+		api.GET("/analytics/:id_user", controllers.GetAnalyticsData)
+		api.GET("/analytics/summary/:id_user", controllers.GetWeeklySummary)
 	}
 
 	return r

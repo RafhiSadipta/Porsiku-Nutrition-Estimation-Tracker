@@ -14,7 +14,7 @@ Future<Map<String, dynamic>> fetchDailyTarget(String userId) async {
 
   final response = await http.get(
     Uri.parse(
-      'http://10.125.170.253:8080/api/daily_target/$userId',
+      'http://192.168.0.109:8080/api/daily_target/$userId',
     ), // 10.0.2.2 untuk Android emulator
     headers: headers,
   );
@@ -23,5 +23,30 @@ Future<Map<String, dynamic>> fetchDailyTarget(String userId) async {
   } else {
     print('Error: \\${response.body}');
     throw Exception('Failed to load daily target');
+  }
+}
+
+Future<Map<String, dynamic>> fetchAnalyticsData(
+  String userId, {
+  int week = 0,
+}) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token');
+
+  final headers = <String, String>{};
+  if (token != null) {
+    headers['Authorization'] = 'Bearer $token';
+  }
+
+  final response = await http.get(
+    Uri.parse('http://192.168.0.109:8080/api/analytics/$userId?week=$week'),
+    headers: headers,
+  );
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else {
+    print('Error: ${response.body}');
+    throw Exception('Failed to load analytics data');
   }
 }
