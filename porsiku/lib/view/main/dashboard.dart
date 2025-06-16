@@ -101,7 +101,7 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       // Fetch daily target
       final targetResp = await http.get(
-        Uri.parse('http://192.168.0.109:8080/api/daily_target/$userId'),
+        Uri.parse('http://192.168.18.156:8080/api/daily_target/$userId'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (targetResp.statusCode == 200) {
@@ -117,7 +117,7 @@ class _DashboardPageState extends State<DashboardPage>
       }
       // Fetch daily consumption summary
       final konsumsiResp = await http.get(
-        Uri.parse('http://192.168.0.109:8080/api/konsumsi/$userId'),
+        Uri.parse('http://192.168.18.156:8080/api/konsumsi/$userId'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (konsumsiResp.statusCode == 200) {

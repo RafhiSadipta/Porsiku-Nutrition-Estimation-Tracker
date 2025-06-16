@@ -91,7 +91,7 @@ class _SignupPageState extends State<SignupPage> {
     setState(() => isLoading = true);
 
     final uri = Uri.parse(
-      'http://192.168.0.109:8080/api/register',
+      'http://192.168.18.156:8080/api/register',
     ); // Localhost Android emulator
     final body = {
       'username': username,

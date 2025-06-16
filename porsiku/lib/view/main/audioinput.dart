@@ -7,6 +7,7 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porsiku/view/main/result.dart';
 import 'dart:io';
+import 'package:http_parser/http_parser.dart';
 
 class AudioInputPage extends StatefulWidget {
   const AudioInputPage({super.key});
@@ -71,8 +72,8 @@ class _AudioInputPageState extends State<AudioInputPage> {
     try {
       final dir = await getTemporaryDirectory();
       final filePath =
-          '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.aac';
-      await _recorder!.startRecorder(toFile: filePath, codec: Codec.aacADTS);
+          '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      await _recorder!.startRecorder(toFile: filePath, codec: Codec.aacMP4);
       setState(() {
         _isRecording = true;
         _audioPath = filePath;
@@ -117,73 +118,79 @@ class _AudioInputPageState extends State<AudioInputPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
-      var request = http.MultipartRequest(
+      // 1. Kirim audio ke /api/detect_food
+      var detectRequest = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.0.109:8080/api/detect_food'),
+        Uri.parse('http://192.168.18.156:8080/api/detect_food'),
       );
-      request.headers['Authorization'] = 'Bearer $token';
-      request.files.add(await http.MultipartFile.fromPath('audio', path));
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      if (response.statusCode == 200) {
-        final respJson = jsonDecode(response.body);
-        // TODO: Tampilkan transkrip
-
-        // Kirim transcript ke nutri-estimation
-        final transcript = respJson['transcript'] ?? '';
-        setState(() {
-          _transcript = transcript;
-        });
-        if (transcript.isEmpty) {
-          setState(() {
-            _errorMsg = 'Tidak ada makanan terdeteksi dari suara.';
-            _isLoading = false;
-          });
-          return;
-        }
-        final foodListArr =
-            transcript
-                .split(',')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList();
-        final nutriResp = await http.post(
-          Uri.parse('http://192.168.0.109:8080/api/nutri-estimation'),
-          headers: <String, String>{
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode({'food_list': foodListArr}),
-        );
-        if (nutriResp.statusCode == 200) {
-          final nutriJson = jsonDecode(nutriResp.body);
-          var nutritionResult = nutriJson['result'];
-          if (nutritionResult == null || nutritionResult is! List) {
-            throw Exception('Format hasil estimasi tidak valid');
-          }
-          if (nutritionResult.isEmpty) {
-            setState(() {
-              _errorMsg = 'Tidak ada makanan terdeteksi.';
-              _isLoading = false;
-            });
-            return;
-          }
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder:
-                  (_) => ResultPage(
-                    foodListText: transcript,
-                    nutritionResult: nutritionResult,
-                    imagePath: _audioPath ?? '',
-                  ),
-            ),
-          );
-        } else {
-          throw Exception('Estimasi nutrisi gagal: \\${nutriResp.body}');
-        }
-      } else {
-        throw Exception('Gagal transkripsi audio: ${response.body}');
+      detectRequest.headers['Authorization'] = 'Bearer $token';
+      detectRequest.files.add(
+        await http.MultipartFile.fromPath(
+          'media',
+          path,
+          contentType: MediaType('audio', 'm4a'),
+        ),
+      );
+      final detectStreamed = await detectRequest.send();
+      final detectResponse = await http.Response.fromStream(detectStreamed);
+      if (detectResponse.statusCode != 200) {
+        throw Exception('Gagal deteksi audio: ${detectResponse.body}');
       }
+      final detectJson = jsonDecode(detectResponse.body);
+      if (detectJson['type'] != 'audio' || detectJson['transkrip'] == null) {
+        throw Exception('Format hasil deteksi audio tidak valid');
+      }
+      final transkrip = detectJson['transkrip'];
+      setState(() {
+        _transcript = transkrip;
+      });
+      // 2. Kirim transkrip ke /api/nutri-estimation
+      final nutriResponse = await http.post(
+        Uri.parse('http://192.168.18.156:8080/api/nutri-estimation'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'food_list': transkrip}),
+      );
+      if (nutriResponse.statusCode != 200) {
+        throw Exception('Estimasi nutrisi gagal: ${nutriResponse.body}');
+      }
+      // Ekstrak JSON array dari response (bisa dalam code block)
+      String nutriBody = nutriResponse.body;
+      RegExp codeBlock = RegExp(r'```json\\n([\s\S]*?)\\n```');
+      RegExpMatch? match = codeBlock.firstMatch(nutriBody);
+      String? jsonStr;
+      if (match != null && match.groupCount >= 1) {
+        jsonStr = match.group(1);
+      } else {
+        // fallback: cari array JSON
+        RegExp arr = RegExp(r'(\[.*\])', dotAll: true);
+        var arrMatch = arr.firstMatch(nutriBody);
+        if (arrMatch != null) jsonStr = arrMatch.group(1);
+      }
+      if (jsonStr == null) throw Exception('Tidak bisa ekstrak hasil nutrisi');
+      var nutritionResult = jsonDecode(jsonStr);
+      if (nutritionResult == null || nutritionResult is! List) {
+        throw Exception('Format hasil estimasi tidak valid');
+      }
+      if (nutritionResult.isEmpty) {
+        setState(() {
+          _errorMsg = 'Tidak ada makanan terdeteksi.';
+          _isLoading = false;
+        });
+        return;
+      }
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder:
+              (_) => ResultPage(
+                foodListText: transkrip,
+                nutritionResult: nutritionResult,
+                imagePath: _audioPath ?? '',
+              ),
+        ),
+      );
     } catch (e) {
       setState(() {
         _errorMsg = 'Gagal proses audio: $e';
