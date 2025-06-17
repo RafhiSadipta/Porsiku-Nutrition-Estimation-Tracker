@@ -202,9 +202,8 @@ class _RecipePageState extends State<RecipePage> {
                         size: 24,
                       ),
                       onPressed: () async {
-                        final result = await showDialog<Map<String, dynamic>>(
-                          context: context,
-                          builder: (context) => const FilterRecipeDialog(),
+                        final result = await FilterRecipeBottomSheet.show(
+                          context,
                         );
                         if (result != null) {
                           setState(() {
