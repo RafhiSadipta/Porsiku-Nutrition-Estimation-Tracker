@@ -41,7 +41,7 @@ func SetupRoutes() *gin.Engine {
 		api.POST("/resep", controllers.SearchRecipesHandler)
 		// api.GET("/resep/nutrient", controllers.SearchByNutrients)
 		// api.GET("/resep/ingredient", controllers.SearchByIngredients)
-		api.GET("/resep-detil", controllers.GetRecipeDetailHandler)
+		api.POST("/resep-detil", controllers.GetRecipeDetailHandler)
 		api.GET("/produk", controllers.GetProductFromBarcodeHandler)
 
 		api.GET("/analytics/:id_user", controllers.GetAnalyticsData)

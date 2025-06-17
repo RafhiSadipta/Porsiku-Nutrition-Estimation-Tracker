@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:porsiku/view/main/recipe.dart';
+import 'package:porsiku/view/main/recipe_open.dart';
 import 'package:porsiku/constants/constants.dart';
 import 'package:porsiku/view/main/textinput.dart';
 import 'package:porsiku/view/main/audioinput.dart';
@@ -83,6 +84,7 @@ class _DashboardPageState extends State<DashboardPage>
   };
   List<Map<String, dynamic>> recentActivity = [];
   List<Map<String, dynamic>> recipeRecommendations = [];
+  bool isLoadingRecipes = true;
 
   void _initDailyTarget() async {
     final userId = await _getUserId();
@@ -101,7 +103,7 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       // Fetch daily target
       final targetResp = await http.get(
-        Uri.parse('http://192.168.212.53:8080/api/daily_target/$userId'),
+        Uri.parse('http://192.168.0.105:8080/api/daily_target/$userId'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (targetResp.statusCode == 200) {
@@ -117,7 +119,7 @@ class _DashboardPageState extends State<DashboardPage>
       }
       // Fetch daily consumption summary
       final konsumsiResp = await http.get(
-        Uri.parse('http://192.168.212.53:8080/api/konsumsi/$userId'),
+        Uri.parse('http://192.168.0.105:8080/api/konsumsi/$userId'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (konsumsiResp.statusCode == 200) {
@@ -166,8 +168,95 @@ class _DashboardPageState extends State<DashboardPage>
 
   Future<void> _fetchRecipeRecommendations() async {
     setState(() {
-      recipeRecommendations = List<Map<String, dynamic>>.from(dummyRecipes);
+      isLoadingRecipes = true;
     });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      // Prepare the request payload for random recipes
+      Map<String, dynamic> payload = {
+        'number': 4, // Fetch 4 recipes
+        'sort': 'random', // Random sorting if supported
+        'addRecipeNutrition': true,
+        'addRecipeInformation': true,
+      };
+
+      final response = await http.post(
+        Uri.parse('http://192.168.0.105:8080/api/resep'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['data'] != null &&
+            data['data']['results'] != null &&
+            data['data']['results'] is List) {
+          final recipes = List<Map<String, dynamic>>.from(
+            data['data']['results'],
+          );
+
+          // Transform the recipe data to match the expected format for the dashboard
+          final transformedRecipes =
+              recipes.take(4).map((recipe) {
+                return {
+                  'id': recipe['id'],
+                  'image':
+                      recipe['image'] ??
+                      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&h=180&q=80',
+                  'title': recipe['title'] ?? 'Unknown Recipe',
+                  'calories':
+                      ((recipe['calories'] as num?)?.toInt() ?? 0).toString(),
+                  'protein':
+                      ((recipe['protein'] as num?)?.toInt() ?? 0).toString(),
+                  'weight': '500', // Default weight since not provided by API
+                  'fiber':
+                      ((recipe['carbs'] as num?)?.toInt() ?? 0)
+                          .toString(), // Using carbs as fiber placeholder
+                  'duration':
+                      recipe['readyInMinutes'] != null
+                          ? '${recipe['readyInMinutes']}min'
+                          : '30min',
+                  'isBookmarked': false,
+                };
+              }).toList();
+
+          setState(() {
+            recipeRecommendations = transformedRecipes;
+            isLoadingRecipes = false;
+          });
+        } else {
+          // Fallback to dummy data if API response is invalid
+          setState(() {
+            recipeRecommendations = List<Map<String, dynamic>>.from(
+              dummyRecipes.take(4),
+            );
+            isLoadingRecipes = false;
+          });
+        }
+      } else {
+        // Fallback to dummy data if API call fails
+        setState(() {
+          recipeRecommendations = List<Map<String, dynamic>>.from(
+            dummyRecipes.take(4),
+          );
+          isLoadingRecipes = false;
+        });
+      }
+    } catch (e) {
+      // Fallback to dummy data if there's an error
+      setState(() {
+        recipeRecommendations = List<Map<String, dynamic>>.from(
+          dummyRecipes.take(4),
+        );
+        isLoadingRecipes = false;
+      });
+    }
   }
 
   void _onItemTapped(int index) {
@@ -354,7 +443,10 @@ class _DashboardPageState extends State<DashboardPage>
     }
     return RefreshIndicator(
       onRefresh: () async {
-        await _fetchTodayGoalAndRecentActivity();
+        await Future.wait([
+          _fetchTodayGoalAndRecentActivity(),
+          _fetchRecipeRecommendations(),
+        ]);
       },
       child: FutureBuilder<Map<String, dynamic>>(
         future: _futureDailyTarget,
@@ -386,7 +478,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
                 const SizedBox(height: 16.0),
                 SectionCard(
-                  title: "Recent Activity",
+                  title: "Today's Meal Log",
                   contentChild: _buildRecentActivityContent(recentActivity),
                 ),
                 const SizedBox(height: 16.0),
@@ -453,6 +545,15 @@ class _DashboardPageState extends State<DashboardPage>
   Widget _buildRecommendationContent(
     List<Map<String, dynamic>> recommendations,
   ) {
+    if (isLoadingRecipes) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     if (recommendations.isEmpty) {
       return Center(
         child: Padding(
@@ -597,23 +698,30 @@ class _RecipeCarousel extends StatelessWidget {
             viewportFraction: 0.9,
             aspectRatio: 2.0,
             onPageChanged: onPageChanged,
-          ),
-          items:
-              recommendations.map((rec) {
-                return Builder(
-                  builder: (BuildContext context) {
-                    return Container(
-                      width: MediaQuery.of(context).size.width,
-                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        image: DecorationImage(
-                          image: NetworkImage(rec['image']),
-                          fit: BoxFit.cover,
-                        ),
+          ),          items: recommendations.map((rec) {
+            return Builder(
+              builder: (BuildContext context) {
+                return GestureDetector(
+                  onTap: () {
+                    // Navigate to recipe detail page
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => RecipeOpenPage(recipe: rec),
                       ),
-                      child: Stack(
+                    );
+                  },
+                  child: Container(
+                    width: MediaQuery.of(context).size.width,
+                    margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                      image: DecorationImage(
+                        image: NetworkImage(rec['image']),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    child: Stack(
                         children: [
                           Positioned(
                             bottom: 0,
@@ -714,15 +822,15 @@ class _RecipeCarousel extends StatelessWidget {
                                       ),
                                     ),
                                   ],
-                                ),
-                              ),
+                                ),                              ),
                             ),
                         ],
                       ),
-                    );
-                  },
-                );
-              }).toList(),
+                    ),
+                  );
+                },
+              );
+            }).toList(),
         ),
         const SizedBox(height: 8),
         Row(

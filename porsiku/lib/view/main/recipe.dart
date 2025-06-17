@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../constants/constants.dart';
 import 'recipe_open.dart';
-import 'filterRecipe.dart'; // Add this import
+import '../../components/filter_recipe_dialog.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RecipePage extends StatefulWidget {
@@ -16,56 +17,160 @@ class RecipePage extends StatefulWidget {
 class _RecipePageState extends State<RecipePage> {
   List<Map<String, dynamic>> recipes = [];
   bool isLoading = true;
+  bool isLoadingMore = false;
+  bool hasMoreData = true;
   String? errorMsg;
-
+  final TextEditingController _searchController = TextEditingController();
+  Map<String, dynamic>? currentFilters;
+  Timer? _debounceTimer;
+  final ScrollController _scrollController = ScrollController();
+  int currentOffset = 0;
+  static const int pageSize = 20;
   @override
   void initState() {
     super.initState();
     fetchRecipes();
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> fetchRecipes({Map<String, dynamic>? filterData}) async {
-    setState(() {
-      isLoading = true;
-      errorMsg = null;
-    });
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounceTimer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> fetchRecipes({
+    Map<String, dynamic>? filterData,
+    bool isLoadMore = false,
+  }) async {
+    if (isLoadMore) {
+      if (isLoadingMore || !hasMoreData) return;
+      setState(() {
+        isLoadingMore = true;
+      });
+    } else {
+      setState(() {
+        isLoading = true;
+        errorMsg = null;
+        currentOffset = 0;
+        hasMoreData = true;
+      });
+    }
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
+
+      // Prepare the request payload
+      Map<String, dynamic> payload = {};
+
+      // Add pagination parameters
+      payload['number'] = pageSize;
+      payload['offset'] = isLoadMore ? currentOffset : 0;
+
+      // Add search query if exists
+      if (_searchController.text.isNotEmpty) {
+        payload['query'] = _searchController.text;
+      }
+
+      // Add filters if exists
+      if (filterData != null) {
+        payload.addAll(filterData);
+        if (!isLoadMore) {
+          currentFilters =
+              filterData; // Store current filters only on new search
+        }
+      } else if (currentFilters != null) {
+        payload.addAll(currentFilters!); // Use stored filters for load more
+      }
+
       final response = await http.post(
-        Uri.parse('http://192.168.212.53:8080/api/resep'),
+        Uri.parse('http://192.168.0.105:8080/api/resep'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode(filterData ?? {}),
+        body: jsonEncode(payload),
       );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
           if (data['data'] != null &&
               data['data']['results'] != null &&
               data['data']['results'] is List) {
-            recipes = List<Map<String, dynamic>>.from(data['data']['results']);
+            final newRecipes = List<Map<String, dynamic>>.from(
+              data['data']['results'],
+            );
+
+            if (isLoadMore) {
+              recipes.addAll(newRecipes);
+              currentOffset += pageSize;
+            } else {
+              recipes = newRecipes;
+              currentOffset = pageSize;
+            }
+
+            // Check if we have more data
+            hasMoreData = newRecipes.length == pageSize;
           } else {
-            recipes = [];
-            errorMsg = 'Format data resep tidak dikenali.';
+            if (!isLoadMore) {
+              recipes = [];
+              errorMsg = 'Format data resep tidak dikenali.';
+            }
           }
           isLoading = false;
+          isLoadingMore = false;
         });
       } else {
         setState(() {
-          errorMsg =
-              'Gagal fetch resep: ${response.statusCode}\n${response.body}';
+          if (!isLoadMore) {
+            errorMsg =
+                'Gagal fetch resep: ${response.statusCode}\n${response.body}';
+          }
           isLoading = false;
+          isLoadingMore = false;
         });
       }
     } catch (e) {
       setState(() {
-        errorMsg = 'Error: $e';
+        if (!isLoadMore) {
+          errorMsg = 'Error: $e';
+        }
         isLoading = false;
+        isLoadingMore = false;
       });
     }
+  }
+
+  // Pull to refresh - clears all filters and search
+  Future<void> _onRefresh() async {
+    setState(() {
+      _searchController.clear();
+      currentFilters = null;
+    });
+    await fetchRecipes();
+  }
+
+  // Scroll listener for infinite scroll
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      // Load more when user is 200 pixels away from the bottom
+      fetchRecipes(isLoadMore: true);
+    }
+  }
+
+  // Search functionality with debounce
+  void _onSearchChanged() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        fetchRecipes(filterData: currentFilters);
+      }
+    });
   }
 
   @override
@@ -97,18 +202,14 @@ class _RecipePageState extends State<RecipePage> {
                         size: 24,
                       ),
                       onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const FilterRecipePage(),
-                          ),
+                        final result = await showDialog<Map<String, dynamic>>(
+                          context: context,
+                          builder: (context) => const FilterRecipeDialog(),
                         );
                         if (result != null) {
-                          // Handle filter result
                           setState(() {
                             isLoading = true;
                           });
-                          // Implement filtered fetch
                           await fetchRecipes(filterData: result);
                         }
                       },
@@ -117,7 +218,12 @@ class _RecipePageState extends State<RecipePage> {
                   ),
                   const SizedBox(width: 8),
                   // Search bar
-                  Expanded(child: _SearchBar()),
+                  Expanded(
+                    child: _SearchBar(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -127,19 +233,48 @@ class _RecipePageState extends State<RecipePage> {
                 Center(child: Text(errorMsg!))
               else
                 Expanded(
-                  child: GridView.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: 0.68,
+                  child: RefreshIndicator(
+                    onRefresh: _onRefresh,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: GridView.builder(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 8,
+                                  crossAxisSpacing: 8,
+                                  childAspectRatio:
+                                      0.75, // Increase aspect ratio to give more height
+                                ),
+                            itemCount: recipes.length,
+                            itemBuilder: (context, index) {
+                              final recipe = recipes[index];
+                              return RecipeCard(recipe: recipe);
+                            },
+                          ),
                         ),
-                    itemCount: recipes.length,
-                    itemBuilder: (context, index) {
-                      final recipe = recipes[index];
-                      return RecipeCard(recipe: recipe);
-                    },
+                        if (isLoadingMore)
+                          const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: CircularProgressIndicator(),
+                          )
+                        else if (!hasMoreData && recipes.isNotEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text(
+                              'No more recipes to load',
+                              style: TextStyle(
+                                color: AppColors.grey,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
             ],
@@ -151,6 +286,10 @@ class _RecipePageState extends State<RecipePage> {
 }
 
 class _SearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+  const _SearchBar({required this.controller, required this.onChanged});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -165,6 +304,8 @@ class _SearchBar extends StatelessWidget {
           const SizedBox(width: 16),
           Expanded(
             child: TextField(
+              controller: controller,
+              onChanged: (_) => onChanged(),
               decoration: const InputDecoration(
                 hintText: 'Search Recipe',
                 border: InputBorder.none,
@@ -220,7 +361,7 @@ class RecipeCard extends StatelessWidget {
                   children: [
                     Container(
                       width: double.infinity,
-                      height: 180,
+                      height: 140, // Reduce image height
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(AppBorderRadius.md),
                         image: DecorationImage(
@@ -230,8 +371,8 @@ class RecipeCard extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      top: 10,
-                      left: 10,
+                      top: 8, // Reduce top position
+                      left: 8, // Reduce left position
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
@@ -249,16 +390,21 @@ class RecipeCard extends StatelessWidget {
                           ],
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.timer, color: AppColors.white, size: 14),
-                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.timer,
+                              color: AppColors.white,
+                              size: 12,
+                            ), // Reduce icon size
+                            const SizedBox(width: 2), // Reduce spacing
                             Text(
                               recipe['readyInMinutes'] != null
                                   ? '${recipe['readyInMinutes']} min'
                                   : '-',
                               style: const TextStyle(
                                 color: AppColors.white,
-                                fontSize: 10,
+                                fontSize: 9, // Reduce font size
                                 fontWeight: FontWeight.w700,
                                 height: 1.15,
                               ),
@@ -268,11 +414,11 @@ class RecipeCard extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      top: 10,
-                      right: 10,
+                      top: 8, // Reduce top position
+                      right: 8, // Reduce right position
                       child: Container(
-                        width: 30,
-                        height: 30,
+                        width: 28, // Reduce button size
+                        height: 28,
                         decoration: BoxDecoration(
                           color: AppColors.black,
                           borderRadius: BorderRadius.circular(
@@ -286,7 +432,7 @@ class RecipeCard extends StatelessWidget {
                                 ? Icons.bookmark
                                 : Icons.bookmark_border,
                             color: AppColors.white,
-                            size: 18,
+                            size: 16, // Reduce icon size
                           ),
                           onPressed: () {},
                           padding: EdgeInsets.zero,
@@ -296,16 +442,16 @@ class RecipeCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: SizedBox(
-                    width: double.infinity,
+                const SizedBox(height: 8), // Reduce spacing
+                Expanded(
+                  // Use Expanded for title to prevent overflow
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       recipe['title'] ?? '-',
                       style: const TextStyle(
                         color: AppColors.black,
-                        fontSize: AppTexts.sm,
+                        fontSize: 12, // Reduce font size
                         fontWeight: FontWeight.w700,
                         height: 1.15,
                       ),
@@ -314,47 +460,46 @@ class RecipeCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4), // Reduce spacing
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: [
-                        _NutriPill(
-                          icon: Icons.local_fire_department,
-                          pillColor: const Color(0xFFEFF6FF),
-                          iconBg: const Color(0xFF155DFC),
-                          textColor: const Color(0xFF155DFC),
-                          label: '${recipe['calories'] ?? '-'}cal',
-                        ),
-                        _NutriPill(
-                          icon: Icons.fitness_center,
-                          pillColor: const Color(0xFFFEF2F2),
-                          iconBg: const Color(0xFFE7000B),
-                          textColor: const Color(0xFFE7000B),
-                          label: '${recipe['protein'] ?? '-'}g',
-                        ),
-                        _NutriPill(
-                          icon: Icons.bubble_chart,
-                          pillColor: const Color(0xFFFFFCE2),
-                          iconBg: const Color(0xFFD08700),
-                          textColor: const Color(0xFFD08700),
-                          label: '${recipe['carbs'] ?? '-'}g',
-                        ),
-                        _NutriPill(
-                          icon: Icons.eco,
-                          pillColor: const Color(0xFFF0FDF4),
-                          iconBg: const Color(0xFF00A63E),
-                          textColor: const Color(0xFF00A63E),
-                          label: '${recipe['fat'] ?? '-'}g',
-                        ),
-                      ],
-                    ),
+                  child: Wrap(
+                    spacing: 2, // Reduce spacing
+                    runSpacing: 2, // Reduce spacing
+                    children: [
+                      _NutriPill(
+                        icon: Icons.local_fire_department,
+                        pillColor: const Color(0xFFEFF6FF),
+                        iconBg: const Color(0xFF155DFC),
+                        textColor: const Color(0xFF155DFC),
+                        label:
+                            '${(recipe['calories'] as num?)?.toInt() ?? 0}cal',
+                      ),
+                      _NutriPill(
+                        icon: Icons.fitness_center,
+                        pillColor: const Color(0xFFFEF2F2),
+                        iconBg: const Color(0xFFE7000B),
+                        textColor: const Color(0xFFE7000B),
+                        label: '${(recipe['protein'] as num?)?.toInt() ?? 0}g',
+                      ),
+                      _NutriPill(
+                        icon: Icons.bubble_chart,
+                        pillColor: const Color(0xFFFFFCE2),
+                        iconBg: const Color(0xFFD08700),
+                        textColor: const Color(0xFFD08700),
+                        label: '${(recipe['carbs'] as num?)?.toInt() ?? 0}g',
+                      ),
+                      _NutriPill(
+                        icon: Icons.eco,
+                        pillColor: const Color(0xFFF0FDF4),
+                        iconBg: const Color(0xFF00A63E),
+                        textColor: const Color(0xFF00A63E),
+                        label: '${(recipe['fat'] as num?)?.toInt() ?? 0}g',
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 4), // Add small bottom spacing
               ],
             ),
           );
@@ -381,7 +526,10 @@ class _NutriPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return IntrinsicWidth(
       child: Container(
-        padding: const EdgeInsets.only(top: 1, left: 4, right: 8, bottom: 1),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 4,
+          vertical: 2,
+        ), // More compact padding
         decoration: BoxDecoration(
           color: pillColor,
           borderRadius: BorderRadius.circular(100),
@@ -390,22 +538,22 @@ class _NutriPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 16,
-              height: 16,
+              width: 14, // Smaller icon container
+              height: 14,
               decoration: BoxDecoration(
                 color: iconBg,
                 borderRadius: BorderRadius.circular(100),
               ),
-              child: Icon(icon, color: Colors.white, size: 12),
+              child: Icon(icon, color: Colors.white, size: 10), // Smaller icon
             ),
             const SizedBox(width: 2),
             Text(
               label,
               style: TextStyle(
                 color: textColor,
-                fontSize: 10,
+                fontSize: 8, // Smaller font
                 fontWeight: FontWeight.w500,
-                height: 1.15,
+                height: 1.0, // Tighter line height
               ),
             ),
           ],

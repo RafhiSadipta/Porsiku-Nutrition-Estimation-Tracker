@@ -9,7 +9,6 @@ import 'steps/step_goal.dart';
 import 'steps/step_weight_goal.dart';
 import 'steps/step_goal_pace.dart';
 import 'steps/step_activity_level.dart';
-import 'steps/step_reminder.dart';
 import 'steps/step_ready.dart';
 import '../../components/button.dart';
 import '../../components/back_button.dart';
@@ -32,10 +31,9 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
   int targetWeight = 65;
   String pace = '0.02kg/week';
   String? activityLevel;
-  List<String> reminders = ['breakfast', 'lunch', 'dinner'];
 
   void nextStep() {
-    if (step < 10) {
+    if (step < 9) {
       setState(() => step++);
     }
   }
@@ -57,7 +55,6 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
       'targetWeight': targetWeight,
       'pace': pace,
       'activityLevel': activityLevel,
-      'reminders': reminders,
     };
 
     Navigator.of(context).pushReplacement(
@@ -113,19 +110,6 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
           onLevelSelected: (l) => setState(() => activityLevel = l),
         );
       case 9:
-        return StepReminder(
-          selectedMeals: reminders,
-          onMealTap: (meal) {
-            setState(() {
-              if (reminders.contains(meal)) {
-                reminders.remove(meal);
-              } else {
-                reminders.add(meal);
-              }
-            });
-          },
-        );
-      case 10:
         return StepReady(onGetStarted: submitOnboardingData);
       default:
         return const SizedBox();
@@ -150,8 +134,6 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
         return pace.isNotEmpty;
       case 8:
         return activityLevel != null;
-      case 9:
-        return reminders.isNotEmpty;
       default:
         return true;
     }
@@ -182,11 +164,11 @@ class _OnboardingFormPageState extends State<OnboardingFormPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: Button(
-                  text: step == 10 ? "Let's Get Started" : 'Next',
+                  text: step == 9 ? "Let's Get Started" : 'Next',
                   variant: ButtonVariant.primary,
-                  isActive: step == 10 ? true : _isStepValid(),
+                  isActive: step == 9 ? true : _isStepValid(),
                   onPressed:
-                      step == 10
+                      step == 9
                           ? submitOnboardingData
                           : (_isStepValid() ? nextStep : null),
                 ),

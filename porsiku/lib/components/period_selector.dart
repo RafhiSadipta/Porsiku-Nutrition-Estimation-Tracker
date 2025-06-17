@@ -19,8 +19,24 @@ class PeriodSelector extends StatelessWidget {
     required this.onWeekSelected,
   });
 
+  String _getWeekRangeFromDate(DateTime weekStart) {
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    return '${weekStart.day}/${weekStart.month} - ${weekEnd.day}/${weekEnd.month}';
+  }
+
+  DateTime _getMondayOfWeek(int weeksBack) {
+    final now = DateTime.now();
+    // Get current Monday (weekday 1 = Monday)
+    final currentMonday = now.subtract(Duration(days: now.weekday - 1));
+    // Go back the specified number of weeks
+    return currentMonday.subtract(Duration(days: weeksBack * 7));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentWeekStart = _getMondayOfWeek(selectedWeek);
+    final currentWeekRange = _getWeekRangeFromDate(currentWeekStart);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -31,8 +47,7 @@ class PeriodSelector extends StatelessWidget {
       child: Row(
         children: [
           const Icon(Icons.calendar_today, color: AppColors.grey),
-          const SizedBox(width: 12),
-          Expanded(
+          const SizedBox(width: 12),          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -41,32 +56,53 @@ class PeriodSelector extends StatelessWidget {
                   style: TextStyle(fontSize: 12, color: AppColors.grey),
                 ),
                 Text(
-                  '${months[selectedMonth]} $selectedYear - Week ${selectedWeek + 1}',
+                  currentWeekRange,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
-                Text(
-                  weekRange,
-                  style: const TextStyle(fontSize: 12, color: AppColors.grey),
-                ),
               ],
             ),
           ),
           PopupMenuButton<int>(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.grey),
             onSelected: onWeekSelected,
             itemBuilder:
                 (context) => List.generate(4, (index) {
-                  final weekStart = DateTime.now()
-                      .subtract(Duration(days: DateTime.now().weekday - 1))
-                      .subtract(Duration(days: index * 7));
-                  final weekEnd = weekStart.add(const Duration(days: 6));
+                  final weekStart = _getMondayOfWeek(index);
+                  final weekRange = _getWeekRangeFromDate(weekStart);
+                  final isSelected = index == selectedWeek;
+
                   return PopupMenuItem(
                     value: index,
-                    child: Text(
-                      'Week ${index + 1} (${weekStart.day}/${weekStart.month} - ${weekEnd.day}/${weekEnd.month})',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              weekRange,
+                              style: TextStyle(
+                                fontWeight:
+                                    isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                color:
+                                    isSelected
+                                        ? AppColors.black
+                                        : AppColors.grey,
+                              ),
+                            ),
+                          ),
+                          if (isSelected)
+                            const Icon(
+                              Icons.check,
+                              color: AppColors.black,
+                              size: 16,
+                            ),
+                        ],
+                      ),
                     ),
                   );
                 }),

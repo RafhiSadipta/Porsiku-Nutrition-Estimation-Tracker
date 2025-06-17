@@ -151,10 +151,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   List<String> _generateDefaultWeekDates() {
     final now = DateTime.now();
-    final currentWeekStart = now.subtract(Duration(days: now.weekday - 1));
-    final weekStart = currentWeekStart.subtract(
-      Duration(days: selectedWeek * 7),
-    );
+    // Get Monday of current week (weekday 1 = Monday)
+    final currentMonday = now.subtract(Duration(days: now.weekday - 1));
+    // Go back the specified number of weeks from current Monday
+    final weekStart = currentMonday.subtract(Duration(days: selectedWeek * 7));
 
     return List.generate(7, (index) {
       final date = weekStart.add(Duration(days: index));
@@ -164,10 +164,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   String getWeekRange() {
     final now = DateTime.now();
-    final currentWeekStart = now.subtract(Duration(days: now.weekday - 1));
-    final weekStart = currentWeekStart.subtract(
-      Duration(days: selectedWeek * 7),
-    );
+    // Get Monday of current week (weekday 1 = Monday)
+    final currentMonday = now.subtract(Duration(days: now.weekday - 1));
+    // Go back the specified number of weeks from current Monday
+    final weekStart = currentMonday.subtract(Duration(days: selectedWeek * 7));
     final weekEnd = weekStart.add(const Duration(days: 6));
 
     return '${weekStart.day}/${weekStart.month} - ${weekEnd.day}/${weekEnd.month}';
@@ -178,6 +178,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       selectedWeek = week;
     });
     _fetchAnalyticsData(); // Fetch new data when week changes
+  }
+
+  // Pull to refresh function
+  Future<void> _onRefresh() async {
+    await _fetchAnalyticsData();
   }
 
   @override
@@ -208,81 +213,87 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 )
                 : LayoutBuilder(
                   builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          // Date Range Selector
-                          PeriodSelector(
-                            selectedWeek: selectedWeek,
-                            selectedMonth: selectedMonth,
-                            selectedYear: selectedYear,
-                            weekRange: getWeekRange(),
-                            months: months,
-                            onWeekSelected: onWeekSelected,
-                          ),
-                          const SizedBox(height: 20),
+                    return RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            // Date Range Selector
+                            PeriodSelector(
+                              selectedWeek: selectedWeek,
+                              selectedMonth: selectedMonth,
+                              selectedYear: selectedYear,
+                              weekRange: getWeekRange(),
+                              months: months,
+                              onWeekSelected: onWeekSelected,
+                            ),
+                            const SizedBox(height: 20),
 
-                          // Analytics Cards
-                          AnalyticsCard(
-                            title: 'Calories Consumption',
-                            unit: 'kcal',
-                            barColor: const Color(0xFF2196F3),
-                            gradientColors: [
-                              const Color(0xFF64B5F6),
-                              const Color(0xFF2196F3),
-                            ],
-                            icon: Icons.local_fire_department,
-                            chartData:
-                                weeklyData['calories'] ?? [0, 0, 0, 0, 0, 0, 0],
-                            weekDates: getWeekDates(),
-                          ),
-                          const SizedBox(height: 16),
+                            // Analytics Cards
+                            AnalyticsCard(
+                              title: 'Calories Consumption',
+                              unit: 'kcal',
+                              barColor: const Color(0xFF2196F3),
+                              gradientColors: [
+                                const Color(0xFF64B5F6),
+                                const Color(0xFF2196F3),
+                              ],
+                              icon: Icons.local_fire_department,
+                              chartData:
+                                  weeklyData['calories'] ??
+                                  [0, 0, 0, 0, 0, 0, 0],
+                              weekDates: getWeekDates(),
+                            ),
+                            const SizedBox(height: 16),
 
-                          AnalyticsCard(
-                            title: 'Protein Consumption',
-                            unit: 'g',
-                            barColor: const Color(0xFFE57373),
-                            gradientColors: [
-                              const Color(0xFFEF5350),
-                              const Color(0xFFE57373),
-                            ],
-                            icon: Icons.fitness_center,
-                            chartData:
-                                weeklyData['protein'] ?? [0, 0, 0, 0, 0, 0, 0],
-                            weekDates: getWeekDates(),
-                          ),
-                          const SizedBox(height: 16),
+                            AnalyticsCard(
+                              title: 'Protein Consumption',
+                              unit: 'g',
+                              barColor: const Color(0xFFE57373),
+                              gradientColors: [
+                                const Color(0xFFEF5350),
+                                const Color(0xFFE57373),
+                              ],
+                              icon: Icons.fitness_center,
+                              chartData:
+                                  weeklyData['protein'] ??
+                                  [0, 0, 0, 0, 0, 0, 0],
+                              weekDates: getWeekDates(),
+                            ),
+                            const SizedBox(height: 16),
 
-                          AnalyticsCard(
-                            title: 'Carbohydrates Consumption',
-                            unit: 'g',
-                            barColor: const Color(0xFFFFB74D),
-                            gradientColors: [
-                              const Color(0xFFFFCA28),
-                              const Color(0xFFFFB74D),
-                            ],
-                            icon: Icons.grain,
-                            chartData:
-                                weeklyData['carbs'] ?? [0, 0, 0, 0, 0, 0, 0],
-                            weekDates: getWeekDates(),
-                          ),
-                          const SizedBox(height: 16),
+                            AnalyticsCard(
+                              title: 'Carbohydrates Consumption',
+                              unit: 'g',
+                              barColor: const Color(0xFFFFB74D),
+                              gradientColors: [
+                                const Color(0xFFFFCA28),
+                                const Color(0xFFFFB74D),
+                              ],
+                              icon: Icons.grain,
+                              chartData:
+                                  weeklyData['carbs'] ?? [0, 0, 0, 0, 0, 0, 0],
+                              weekDates: getWeekDates(),
+                            ),
+                            const SizedBox(height: 16),
 
-                          AnalyticsCard(
-                            title: 'Fat Consumption',
-                            unit: 'g',
-                            barColor: const Color(0xFF81C784),
-                            gradientColors: [
-                              const Color(0xFF66BB6A),
-                              const Color(0xFF81C784),
-                            ],
-                            icon: Icons.water_drop,
-                            chartData:
-                                weeklyData['fat'] ?? [0, 0, 0, 0, 0, 0, 0],
-                            weekDates: getWeekDates(),
-                          ),
-                        ],
+                            AnalyticsCard(
+                              title: 'Fat Consumption',
+                              unit: 'g',
+                              barColor: const Color(0xFF81C784),
+                              gradientColors: [
+                                const Color(0xFF66BB6A),
+                                const Color(0xFF81C784),
+                              ],
+                              icon: Icons.water_drop,
+                              chartData:
+                                  weeklyData['fat'] ?? [0, 0, 0, 0, 0, 0, 0],
+                              weekDates: getWeekDates(),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },

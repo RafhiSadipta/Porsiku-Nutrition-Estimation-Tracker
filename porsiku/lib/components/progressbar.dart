@@ -7,7 +7,7 @@ class ProgressBarOnboarding extends StatelessWidget {
   const ProgressBarOnboarding({
     super.key,
     required this.step,
-    this.totalStep = 11,
+    this.totalStep = 10,
   });
 
   @override

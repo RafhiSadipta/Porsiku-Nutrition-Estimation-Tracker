@@ -16,24 +16,61 @@ func SearchRecipes(filters map[string]interface{}) (*SpoonacularResponse, error)
 	if spoonacularAPIKey == "" {
 		return nil, fmt.Errorf("API key Spoonacular tidak ditemukan")
 	}
-
 	params := url.Values{}
 	params.Add("apiKey", spoonacularAPIKey)
 	params.Add("addRecipeNutrition", "true")
 	params.Add("addRecipeInformation", "true")
 
-	var minCarbs, maxCarbs *float64
+	// Extract nutrition filters for manual filtering since Spoonacular API doesn't handle all of them reliably
+	var minCarbs, maxCarbs, minFat, maxFat, minProtein, maxProtein, minCalories, maxCalories *float64
+
 	if v, ok := filters["minCarbs"]; ok {
 		if f, ok := v.(float64); ok {
 			minCarbs = &f
 		}
-		delete(filters, "minCarbs") // agar tidak dikirim ke API
+		delete(filters, "minCarbs")
 	}
 	if v, ok := filters["maxCarbs"]; ok {
 		if f, ok := v.(float64); ok {
 			maxCarbs = &f
 		}
 		delete(filters, "maxCarbs")
+	}
+	if v, ok := filters["minFat"]; ok {
+		if f, ok := v.(float64); ok {
+			minFat = &f
+		}
+		delete(filters, "minFat")
+	}
+	if v, ok := filters["maxFat"]; ok {
+		if f, ok := v.(float64); ok {
+			maxFat = &f
+		}
+		delete(filters, "maxFat")
+	}
+	if v, ok := filters["minProtein"]; ok {
+		if f, ok := v.(float64); ok {
+			minProtein = &f
+		}
+		delete(filters, "minProtein")
+	}
+	if v, ok := filters["maxProtein"]; ok {
+		if f, ok := v.(float64); ok {
+			maxProtein = &f
+		}
+		delete(filters, "maxProtein")
+	}
+	if v, ok := filters["minCalories"]; ok {
+		if f, ok := v.(float64); ok {
+			minCalories = &f
+		}
+		delete(filters, "minCalories")
+	}
+	if v, ok := filters["maxCalories"]; ok {
+		if f, ok := v.(float64); ok {
+			maxCalories = &f
+		}
+		delete(filters, "maxCalories")
 	}
 
 	for key, value := range filters {
@@ -97,10 +134,29 @@ func SearchRecipes(filters map[string]interface{}) (*SpoonacularResponse, error)
 			}
 		}
 
+		// Apply all nutrition filters
 		if minCarbs != nil && carbs < *minCarbs {
 			continue
 		}
 		if maxCarbs != nil && carbs > *maxCarbs {
+			continue
+		}
+		if minFat != nil && fat < *minFat {
+			continue
+		}
+		if maxFat != nil && fat > *maxFat {
+			continue
+		}
+		if minProtein != nil && protein < *minProtein {
+			continue
+		}
+		if maxProtein != nil && protein > *maxProtein {
+			continue
+		}
+		if minCalories != nil && calories < *minCalories {
+			continue
+		}
+		if maxCalories != nil && calories > *maxCalories {
 			continue
 		}
 

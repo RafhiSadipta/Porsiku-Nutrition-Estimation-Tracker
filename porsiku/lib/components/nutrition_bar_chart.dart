@@ -98,7 +98,17 @@ class _NutritionBarChartState extends State<NutritionBarChart> {
                   ];
                   int idx = value.toInt();
                   if (idx < 0 || idx > 6) return const SizedBox();
-                  final isToday = idx == 6;
+
+                  // Calculate if this day is today based on Monday-start week
+                  final now = DateTime.now();
+                  final currentMonday = now.subtract(
+                    Duration(days: now.weekday - 1),
+                  );
+                  final dayInWeek = currentMonday.add(Duration(days: idx));
+                  final isToday =
+                      dayInWeek.day == now.day &&
+                      dayInWeek.month == now.month &&
+                      dayInWeek.year == now.year;
 
                   return Padding(
                     padding: const EdgeInsets.only(
@@ -131,7 +141,14 @@ class _NutritionBarChartState extends State<NutritionBarChart> {
             ),
           ),
           barGroups: List.generate(7, (i) {
-            final isToday = i == 6;
+            // Calculate if this day is today based on Monday-start week
+            final now = DateTime.now();
+            final currentMonday = now.subtract(Duration(days: now.weekday - 1));
+            final dayInWeek = currentMonday.add(Duration(days: i));
+            final isToday =
+                dayInWeek.day == now.day &&
+                dayInWeek.month == now.month &&
+                dayInWeek.year == now.year;
             final isTouched = touchedIndex == i;
             return BarChartGroupData(
               x: i,
