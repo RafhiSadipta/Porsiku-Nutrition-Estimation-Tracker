@@ -124,7 +124,7 @@ class _ResultPageState extends State<ResultPage> {
         isFoto = true;
       }
       final response = await http.put(
-        Uri.parse('http://192.168.18.156:8080/api/konsumsi/$konsumsiId'),
+        Uri.parse('http://192.168.212.53:8080/api/konsumsi/$konsumsiId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -221,7 +221,7 @@ class _ResultPageState extends State<ResultPage> {
         isFoto = true;
       }
       final response = await http.post(
-        Uri.parse('http://192.168.18.156:8080/api/konsumsi'),
+        Uri.parse('http://192.168.212.53:8080/api/konsumsi'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -283,7 +283,7 @@ class _ResultPageState extends State<ResultPage> {
         return;
       }
       final response = await http.put(
-        Uri.parse('http://192.168.18.156:8080/api/konsumsi/$konsumsiId'),
+        Uri.parse('http://192.168.212.53:8080/api/konsumsi/$konsumsiId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

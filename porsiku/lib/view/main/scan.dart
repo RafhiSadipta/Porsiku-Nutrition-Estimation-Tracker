@@ -126,7 +126,7 @@ class _ScanPageState extends State<ScanPage> {
       }
 
       final uri = Uri.parse(
-        'http://192.168.18.156:8080/api/produk?barcode=$barcode',
+        'http://192.168.212.53:8080/api/produk?barcode=$barcode',
       );
 
       final response = await http.get(

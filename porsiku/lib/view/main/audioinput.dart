@@ -121,7 +121,7 @@ class _AudioInputPageState extends State<AudioInputPage> {
       // 1. Kirim audio ke /api/detect_food
       var detectRequest = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.18.156:8080/api/detect_food'),
+        Uri.parse('http://192.168.212.53:8080/api/detect_food'),
       );
       detectRequest.headers['Authorization'] = 'Bearer $token';
       detectRequest.files.add(
@@ -146,7 +146,7 @@ class _AudioInputPageState extends State<AudioInputPage> {
       });
       // 2. Kirim transkrip ke /api/nutri-estimation
       final nutriResponse = await http.post(
-        Uri.parse('http://192.168.18.156:8080/api/nutri-estimation'),
+        Uri.parse('http://192.168.212.53:8080/api/nutri-estimation'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

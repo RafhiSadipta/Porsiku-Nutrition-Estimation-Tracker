@@ -35,7 +35,7 @@ class _ViewImagePageState extends State<ViewImagePage> {
       // 1. Send image to /api/detect_food
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.18.156:8080/api/detect_food'),
+        Uri.parse('http://192.168.212.53:8080/api/detect_food'),
       );
       request.headers['Authorization'] = 'Bearer $token';
       // Tentukan content-type manual
@@ -68,7 +68,7 @@ class _ViewImagePageState extends State<ViewImagePage> {
       // 2. Send food list to /api/nutri-estimation
       var nutriResponse = await http
           .post(
-            Uri.parse('http://192.168.18.156:8080/api/nutri-estimation'),
+            Uri.parse('http://192.168.212.53:8080/api/nutri-estimation'),
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $token',
@@ -130,7 +130,7 @@ class _ViewImagePageState extends State<ViewImagePage> {
       bool isFoto = true;
       // Kirim ke backend
       final konsumsiResponse = await http.post(
-        Uri.parse('http://192.168.18.156:8080/api/konsumsi'),
+        Uri.parse('http://192.168.212.53:8080/api/konsumsi'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

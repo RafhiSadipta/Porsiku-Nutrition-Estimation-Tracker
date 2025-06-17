@@ -14,7 +14,7 @@ Future<Map<String, dynamic>> fetchDailyTarget(String userId) async {
 
   final response = await http.get(
     Uri.parse(
-      'http://192.168.18.156:8080/api/daily_target/$userId',
+      'http://192.168.212.53:8080/api/daily_target/$userId',
     ), // 10.0.2.2 untuk Android emulator
     headers: headers,
   );
@@ -39,7 +39,7 @@ Future<Map<String, dynamic>> fetchAnalyticsData(
   }
 
   final response = await http.get(
-    Uri.parse('http://192.168.18.156:8080/api/analytics/$userId?week=$week'),
+    Uri.parse('http://192.168.212.53:8080/api/analytics/$userId?week=$week'),
     headers: headers,
   );
 

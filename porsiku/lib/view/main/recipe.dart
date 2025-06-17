@@ -1,9 +1,72 @@
 import 'package:flutter/material.dart';
 import '../../constants/constants.dart';
 import 'recipe_open.dart';
+import 'filterRecipe.dart'; // Add this import
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class RecipePage extends StatelessWidget {
+class RecipePage extends StatefulWidget {
   const RecipePage({super.key});
+
+  @override
+  State<RecipePage> createState() => _RecipePageState();
+}
+
+class _RecipePageState extends State<RecipePage> {
+  List<Map<String, dynamic>> recipes = [];
+  bool isLoading = true;
+  String? errorMsg;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchRecipes();
+  }
+
+  Future<void> fetchRecipes({Map<String, dynamic>? filterData}) async {
+    setState(() {
+      isLoading = true;
+      errorMsg = null;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final response = await http.post(
+        Uri.parse('http://192.168.212.53:8080/api/resep'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(filterData ?? {}),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          if (data['data'] != null &&
+              data['data']['results'] != null &&
+              data['data']['results'] is List) {
+            recipes = List<Map<String, dynamic>>.from(data['data']['results']);
+          } else {
+            recipes = [];
+            errorMsg = 'Format data resep tidak dikenali.';
+          }
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          errorMsg =
+              'Gagal fetch resep: ${response.statusCode}\n${response.body}';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMsg = 'Error: $e';
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +96,22 @@ class RecipePage extends StatelessWidget {
                         color: AppColors.grey,
                         size: 24,
                       ),
-                      onPressed: () {},
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FilterRecipePage(),
+                          ),
+                        );
+                        if (result != null) {
+                          // Handle filter result
+                          setState(() {
+                            isLoading = true;
+                          });
+                          // Implement filtered fetch
+                          await fetchRecipes(filterData: result);
+                        }
+                      },
                       padding: EdgeInsets.zero,
                     ),
                   ),
@@ -43,21 +121,27 @@ class RecipePage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 0.68,
+              if (isLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (errorMsg != null)
+                Center(child: Text(errorMsg!))
+              else
+                Expanded(
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 0.68,
+                        ),
+                    itemCount: recipes.length,
+                    itemBuilder: (context, index) {
+                      final recipe = recipes[index];
+                      return RecipeCard(recipe: recipe);
+                    },
                   ),
-                  itemCount: dummyRecipes.length,
-                  itemBuilder: (context, index) {
-                    final recipe = dummyRecipes[index];
-                    return RecipeCard(recipe: recipe);
-                  },
                 ),
-              ),
             ],
           ),
         ),
@@ -116,7 +200,6 @@ class RecipeCard extends StatelessWidget {
         builder: (context, constraints) {
           return Container(
             width: constraints.maxWidth,
-            // Kurangi padding bawah agar tidak overflow
             padding: const EdgeInsets.only(
               top: 4,
               left: 4,
@@ -130,7 +213,7 @@ class RecipeCard extends StatelessWidget {
               boxShadow: AppShadows.card,
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min, // Card height hug content
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Stack(
@@ -141,7 +224,7 @@ class RecipeCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(AppBorderRadius.md),
                         image: DecorationImage(
-                          image: NetworkImage(recipe['image']),
+                          image: NetworkImage(recipe['image'] ?? ''),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -170,7 +253,9 @@ class RecipeCard extends StatelessWidget {
                             Icon(Icons.timer, color: AppColors.white, size: 14),
                             const SizedBox(width: 4),
                             Text(
-                              recipe['duration'],
+                              recipe['readyInMinutes'] != null
+                                  ? '${recipe['readyInMinutes']} min'
+                                  : '-',
                               style: const TextStyle(
                                 color: AppColors.white,
                                 fontSize: 10,
@@ -196,7 +281,8 @@ class RecipeCard extends StatelessWidget {
                         ),
                         child: IconButton(
                           icon: Icon(
-                            recipe['isBookmarked']
+                            (recipe['isBookmarked'] is bool &&
+                                    recipe['isBookmarked'] == true)
                                 ? Icons.bookmark
                                 : Icons.bookmark_border,
                             color: AppColors.white,
@@ -216,7 +302,7 @@ class RecipeCard extends StatelessWidget {
                   child: SizedBox(
                     width: double.infinity,
                     child: Text(
-                      recipe['title'],
+                      recipe['title'] ?? '-',
                       style: const TextStyle(
                         color: AppColors.black,
                         fontSize: AppTexts.sm,
@@ -242,28 +328,28 @@ class RecipeCard extends StatelessWidget {
                           pillColor: const Color(0xFFEFF6FF),
                           iconBg: const Color(0xFF155DFC),
                           textColor: const Color(0xFF155DFC),
-                          label: '${recipe['calories']}cal',
+                          label: '${recipe['calories'] ?? '-'}cal',
                         ),
                         _NutriPill(
                           icon: Icons.fitness_center,
                           pillColor: const Color(0xFFFEF2F2),
                           iconBg: const Color(0xFFE7000B),
                           textColor: const Color(0xFFE7000B),
-                          label: '${recipe['protein']}g',
+                          label: '${recipe['protein'] ?? '-'}g',
                         ),
                         _NutriPill(
                           icon: Icons.bubble_chart,
                           pillColor: const Color(0xFFFFFCE2),
                           iconBg: const Color(0xFFD08700),
                           textColor: const Color(0xFFD08700),
-                          label: '${recipe['weight']}g',
+                          label: '${recipe['carbs'] ?? '-'}g',
                         ),
                         _NutriPill(
                           icon: Icons.eco,
                           pillColor: const Color(0xFFF0FDF4),
                           iconBg: const Color(0xFF00A63E),
                           textColor: const Color(0xFF00A63E),
-                          label: '${recipe['fiber']}g',
+                          label: '${recipe['fat'] ?? '-'}g',
                         ),
                       ],
                     ),
