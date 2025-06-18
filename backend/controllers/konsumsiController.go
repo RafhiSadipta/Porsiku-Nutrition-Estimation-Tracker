@@ -5,7 +5,6 @@ import (
 	"backend/models"
 
 	"net/http"
-	"strconv"
 
 	"fmt"
 
@@ -100,50 +99,66 @@ func GetKonsumsiByUserID(c *gin.Context) {
 	})
 }
 
+// SaveKonsumsi - POST /api/save_konsumsi/:id - Mark a meal as saved
 func SaveKonsumsi(c *gin.Context) {
-	idParam := c.Param("id")
-	if idParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter 'id' diperlukan"})
+	id := c.Param("id")
+	var konsumsi models.Konsumsi
+
+	if err := config.DB.First(&konsumsi, "id = ? AND soft_deleted = ?", id, false).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Data konsumsi tidak ditemukan"})
 		return
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
-		return
-	}
+	// Update is_saved to true
+	konsumsi.IsSaved = true
 
-	result := config.DB.Model(&models.Konsumsi{}).
-		Where("id = ?", id).
-		Update("is_saved", true)
-
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-
-	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Konsumsi tidak ditemukan"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Konsumsi berhasil disimpan"})
-}
-
-func GetSavedKonsumsiByUser(c *gin.Context) {
-	idUser := c.Param("id_user") // ambil dari path URL
-
-	var konsumsiList []models.Konsumsi
-	if err := config.DB.Preload("NutritionItems").
-		Where("id_user = ? AND is_saved = ?", idUser, true).
-		Find(&konsumsiList).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data"})
+	if err := config.DB.Save(&konsumsi).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan konsumsi"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Data konsumsi tersimpan ditemukan",
-		"data":    konsumsiList,
+		"message": "Konsumsi berhasil disimpan",
+		"data":    konsumsi,
+	})
+}
+
+// UpdateSaveKonsumsi - PUT /api/save_konsumsi/:id - Update save status of a meal
+func UpdateSaveKonsumsi(c *gin.Context) {
+	id := c.Param("id")
+	var konsumsi models.Konsumsi
+
+	if err := config.DB.First(&konsumsi, "id = ? AND soft_deleted = ?", id, false).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Data konsumsi tidak ditemukan"})
+		return
+	}
+
+	// Parse request body to get is_saved status
+	var request struct {
+		IsSaved bool `json:"is_saved"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Request tidak valid"})
+		return
+	}
+
+	// Update is_saved status
+	konsumsi.IsSaved = request.IsSaved
+
+	if err := config.DB.Save(&konsumsi).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate status simpan konsumsi"})
+		return
+	}
+
+	action := "disimpan"
+	if !request.IsSaved {
+		action = "dihapus dari simpanan"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("Konsumsi berhasil %s", action),
+		"data":    konsumsi,
 	})
 }
 
@@ -222,6 +237,21 @@ func DeleteKonsumsi(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus konsumsi"})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "Data konsumsi berhasil dihapus"})
+}
+
+// GetSavedKonsumsiByUser - GET /api/save_konsumsi/:id_user - Get all saved meals for a user
+func GetSavedKonsumsiByUser(c *gin.Context) {
+	userID := c.Param("id_user")
+	var savedKonsumsi []models.Konsumsi
+
+	if err := config.DB.Preload("NutritionItems").Where("id_user = ? AND is_saved = ? AND soft_deleted = ?", userID, true, false).Find(&savedKonsumsi).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data konsumsi tersimpan"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Data konsumsi tersimpan berhasil diambil",
+		"data":    savedKonsumsi,
+	})
 }

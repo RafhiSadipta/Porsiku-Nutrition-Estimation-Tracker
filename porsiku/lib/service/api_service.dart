@@ -14,7 +14,7 @@ Future<Map<String, dynamic>> fetchDailyTarget(String userId) async {
 
   final response = await http.get(
     Uri.parse(
-      'http://192.168.0.107:8080/api/daily_target/$userId',
+      'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/daily_target/$userId',
     ), // 10.0.2.2 untuk Android emulator
     headers: headers,
   );
@@ -39,7 +39,9 @@ Future<Map<String, dynamic>> fetchAnalyticsData(
   }
 
   final response = await http.get(
-    Uri.parse('http://192.168.0.107:8080/api/analytics/$userId?week=$week'),
+    Uri.parse(
+      'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/analytics/$userId?week=$week',
+    ),
     headers: headers,
   );
 
@@ -61,7 +63,9 @@ Future<Map<String, dynamic>> fetchRecipeDetail(int recipeId) async {
   }
 
   final response = await http.post(
-    Uri.parse('http://192.168.0.107:8080/api/resep-detil'),
+    Uri.parse(
+      'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/resep-detil',
+    ),
     headers: headers,
     body: json.encode({'id': recipeId}),
   );

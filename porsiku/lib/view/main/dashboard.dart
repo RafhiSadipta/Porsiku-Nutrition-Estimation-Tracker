@@ -18,6 +18,7 @@ import 'package:porsiku/constants/constants.dart';
 import 'package:porsiku/view/main/textinput.dart';
 import 'package:porsiku/view/main/audioinput.dart';
 import 'package:porsiku/view/main/result.dart';
+import 'package:porsiku/components/saved_meal_bottom_sheet.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -104,7 +105,9 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       // Fetch daily target
       final targetResp = await http.get(
-        Uri.parse('http://192.168.0.107:8080/api/daily_target/$userId'),
+        Uri.parse(
+          'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/daily_target/$userId',
+        ),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (targetResp.statusCode == 200) {
@@ -120,7 +123,9 @@ class _DashboardPageState extends State<DashboardPage>
       }
       // Fetch daily consumption summary
       final konsumsiResp = await http.get(
-        Uri.parse('http://192.168.0.107:8080/api/konsumsi/$userId'),
+        Uri.parse(
+          'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/konsumsi/$userId',
+        ),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (konsumsiResp.statusCode == 200) {
@@ -187,7 +192,9 @@ class _DashboardPageState extends State<DashboardPage>
       };
 
       final response = await http.post(
-        Uri.parse('http://192.168.0.107:8080/api/resep'),
+        Uri.parse(
+          'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/resep',
+        ),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -367,8 +374,7 @@ class _DashboardPageState extends State<DashboardPage>
                     label: "Saved",
                     onTap: () {
                       Navigator.pop(context);
-                      // TODO: Navigate to Saved Meals page
-                      // Navigator.pushNamed(context, '/saved-meals');
+                      _showSavedMealBottomSheet();
                     },
                   ),
                 ],
@@ -411,6 +417,63 @@ class _DashboardPageState extends State<DashboardPage>
           ],
         ),
       ),
+    );
+  }
+
+  void _showSavedMealBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => SavedMealBottomSheet(
+            onMealSelected: (Map<String, dynamic> selectedMeal) async {
+              // Transform saved meal data to match ResultPage requirements
+              final nutritionItems =
+                  selectedMeal['nutrition_items'] as List? ?? [];
+
+              // Create nutrition result format for ResultPage
+              final nutritionResult =
+                  nutritionItems.isNotEmpty
+                      ? nutritionItems
+                      : [
+                        {
+                          'nama_makanan':
+                              selectedMeal['nama_makanan'] ?? 'Unknown Product',
+                          'kalori_total': selectedMeal['kalori_total'] ?? 0,
+                          'protein_total': selectedMeal['protein_total'] ?? 0,
+                          'lemak_total': selectedMeal['lemak_total'] ?? 0,
+                          'karbohidrat_total':
+                              selectedMeal['karbohidrat_total'] ?? 0,
+                          'waktu_makan':
+                              selectedMeal['waktu_makan'] ?? 'breakfast',
+                        },
+                      ]; // Navigate to result page with the selected saved meal
+              print(
+                'DEBUG: Navigating to ResultPage with foto: ${selectedMeal['foto']}',
+              );
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => ResultPage(
+                        foodListText:
+                            selectedMeal['nama_makanan'] ?? 'Saved Meal',
+                        nutritionResult: nutritionResult,
+                        imagePath:
+                            selectedMeal['foto'] ??
+                            '', // Use saved photo or empty
+                        isViewMode:
+                            false, // Allow editing and saving as new entry
+                        existingKonsumsiId:
+                            null, // This is a new entry from saved meal
+                      ),
+                ),
+              );
+              // Refresh dashboard after returning
+              _fetchTodayGoalAndRecentActivity();
+            },
+          ),
     );
   }
 
@@ -592,7 +655,9 @@ class _DashboardPageState extends State<DashboardPage>
     final konsumsiId = activity['id'] ?? activity['konsumsi_id'];
     if (konsumsiId == null) return;
     final response = await http.delete(
-      Uri.parse('http://192.168.0.107:8080/api/konsumsi/$konsumsiId'),
+      Uri.parse(
+        'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/konsumsi/$konsumsiId',
+      ),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
@@ -612,7 +677,9 @@ class _DashboardPageState extends State<DashboardPage>
     final token = prefs.getString('token');
     if (token == null) return null;
     final response = await http.get(
-      Uri.parse('http://192.168.0.107:8080/api/konsumsi/item/$konsumsiId'),
+      Uri.parse(
+        'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/konsumsi/item/$konsumsiId',
+      ),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
@@ -751,6 +818,9 @@ class _DashboardPageState extends State<DashboardPage>
                             (item) => {
                               'nama_makanan': item['nama_makanan'] ?? '',
                               'jumlah': item['jumlah'] ?? '',
+                              'waktu_makan':
+                                  konsumsiDetail['waktu_makan'] ?? 'Dinner',
+                              'is_saved': konsumsiDetail['is_saved'] ?? false,
                               'nutrition_total': {
                                 'kalori': item['kalori'] ?? 0,
                                 'protein': item['protein'] ?? 0.0,
@@ -764,6 +834,9 @@ class _DashboardPageState extends State<DashboardPage>
                         {
                           'nama_makanan': konsumsiDetail['nama_makanan'] ?? '',
                           'jumlah': '1 serving',
+                          'waktu_makan':
+                              konsumsiDetail['waktu_makan'] ?? 'Dinner',
+                          'is_saved': konsumsiDetail['is_saved'] ?? false,
                           'nutrition_total': {
                             'kalori': konsumsiDetail['kalori_total'] ?? 0,
                             'protein': konsumsiDetail['protein_total'] ?? 0,
@@ -781,6 +854,8 @@ class _DashboardPageState extends State<DashboardPage>
                         foodListText: konsumsiDetail['nama_makanan'] ?? '',
                         nutritionResult: nutritionResult,
                         imagePath: konsumsiDetail['foto'] ?? '',
+                        existingKonsumsiId: konsumsiId.toString(),
+                        isViewMode: true,
                       ),
                 ),
               );

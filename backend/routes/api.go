@@ -30,12 +30,12 @@ func SetupRoutes() *gin.Engine {
 		api.GET("/daily_target/:id", controllers.GetDailyTargetByUserId)
 		api.POST("/detect_food", controllers.DetectFoodHandler)
 		api.POST("/nutri-estimation", controllers.CalculateNutritionHandler)
-
 		api.POST("/konsumsi", controllers.CreateKonsumsi)
 		api.GET("/konsumsi", controllers.GetAllKonsumsi)
 		api.GET("/konsumsi/:id_user", controllers.GetKonsumsiByUserID)
 		api.GET("/konsumsi/item/:id", controllers.GetKonsumsiById)
 		api.POST("/save_konsumsi/:id", controllers.SaveKonsumsi)
+		api.PUT("/save_konsumsi/:id", controllers.UpdateSaveKonsumsi)
 		api.GET("/save_konsumsi/:id_user", controllers.GetSavedKonsumsiByUser)
 		api.PUT("/konsumsi/:id", controllers.UpdateKonsumsi)
 		api.DELETE("/konsumsi/:id", controllers.DeleteKonsumsi)

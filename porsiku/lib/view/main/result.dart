@@ -10,12 +10,18 @@ class ResultPage extends StatefulWidget {
   final String foodListText;
   final List nutritionResult;
   final String imagePath;
+  final String?
+  existingKonsumsiId; // ID konsumsi yang sudah ada (untuk view/edit mode)
+  final bool
+  isViewMode; // true jika membuka untuk view/edit, false untuk create baru
 
   const ResultPage({
     super.key,
     required this.foodListText,
     required this.nutritionResult,
     required this.imagePath,
+    this.existingKonsumsiId,
+    this.isViewMode = false, // default false untuk backward compatibility
   });
 
   @override
@@ -26,15 +32,100 @@ class _ResultPageState extends State<ResultPage> {
   String? konsumsiId;
   bool isDeleting = false;
   bool isLoading = true;
+  bool isSaved = false;
+  bool isSaving = false;
   late String foodName;
-
+  int quantity = 1;
+  late String mealType;
   @override
   void initState() {
     super.initState();
     final item =
         widget.nutritionResult.isNotEmpty ? widget.nutritionResult[0] : {};
     foodName = item['nama_makanan'] ?? 'Unknown Product';
-    _logConsumption();
+
+    if (widget.isViewMode && widget.existingKonsumsiId != null) {
+      // View/Edit mode: gunakan konsumsiId yang sudah ada
+      konsumsiId = widget.existingKonsumsiId;
+      // Ambil meal type dari data yang ada jika tersedia
+      mealType = item['waktu_makan'] ?? _getCurrentMealType();
+      quantity = item['quantity'] ?? 1;
+      // Ambil status saved dari data yang ada
+      isSaved = item['is_saved'] ?? false;
+      // Set loading false karena tidak perlu POST baru
+      isLoading = false;
+      print(
+        'DEBUG: View mode - using existing konsumsiId: $konsumsiId, isSaved: $isSaved',
+      );
+    } else {
+      // Create mode: auto-detect meal type dan buat log baru
+      mealType = _getCurrentMealType();
+      _logConsumption();
+    }
+  }
+
+  String _getCurrentMealType() {
+    final now = DateTime.now();
+    final hour = now.hour;
+
+    if (hour >= 5 && hour < 11) {
+      return 'Breakfast';
+    } else if (hour >= 11 && hour < 17) {
+      return 'Lunch';
+    } else {
+      return 'Dinner';
+    }
+  }
+
+  void _incrementQuantity() {
+    setState(() {
+      quantity++;
+    });
+    _updateQuantityOnBackend();
+  }
+
+  void _decrementQuantity() {
+    if (quantity > 1) {
+      setState(() {
+        quantity--;
+      });
+      _updateQuantityOnBackend();
+    }
+  }
+
+  void _onMealTypeChanged(String? newMealType) {
+    if (newMealType != null && newMealType != mealType) {
+      setState(() {
+        mealType = newMealType;
+      });
+      _updateMealTypeOnBackend();
+    }
+  }
+
+  Future<void> _updateQuantityOnBackend() async {
+    if (konsumsiId != null) {
+      try {
+        await _updateConsumptionData();
+        print('DEBUG: Quantity updated successfully to $quantity');
+      } catch (e) {
+        print('DEBUG: Failed to update quantity: $e');
+        // Don't show error to user for quantity updates as it's real-time
+      }
+    }
+  }
+
+  Future<void> _updateMealTypeOnBackend() async {
+    if (konsumsiId != null) {
+      try {
+        await _updateConsumptionData();
+        print('DEBUG: Meal type updated successfully to $mealType');
+      } catch (e) {
+        print('DEBUG: Failed to update meal type: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update meal type: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _editFoodName() async {
@@ -142,6 +233,11 @@ class _ResultPageState extends State<ResultPage> {
 
   Future<void> _updateFoodNameOnBackend() async {
     print('DEBUG: _updateFoodNameOnBackend called');
+    await _updateConsumptionData();
+  }
+
+  Future<void> _updateConsumptionData() async {
+    print('DEBUG: _updateConsumptionData called');
     print('DEBUG: konsumsiId = $konsumsiId');
 
     if (konsumsiId == null) {
@@ -164,33 +260,44 @@ class _ResultPageState extends State<ResultPage> {
       }
 
       print('DEBUG: Token found: ${token.substring(0, 20)}...');
-      print('DEBUG: User ID: $userId'); // Ambil seluruh ingredients
+      print('DEBUG: User ID: $userId');
+      print('DEBUG: Current quantity: $quantity');
+      print('DEBUG: Current meal type: $mealType');
+
+      // Calculate nutrition with quantity multiplier
       final List<Map<String, dynamic>> ingredients =
           widget.nutritionResult.isNotEmpty
               ? widget.nutritionResult.map<Map<String, dynamic>>((item) {
                 final nutr = item['nutrition_total'] ?? {};
-                int kalori = 0;
+                int baseKalori = 0;
                 if (nutr.isNotEmpty && nutr['kalori'] != null) {
-                  kalori = (nutr['kalori'] ?? 0).round();
+                  baseKalori = (nutr['kalori'] ?? 0).round();
                 } else if (item['kalori'] != null) {
-                  kalori = (item['kalori'] ?? 0).round();
+                  baseKalori = (item['kalori'] ?? 0).round();
                 } else if (item['calories'] != null) {
-                  kalori = (item['calories'] ?? 0).round();
+                  baseKalori = (item['calories'] ?? 0).round();
                 }
+
+                double baseProtein =
+                    (nutr['protein'] ?? item['protein'] ?? 0).toDouble();
+                double baseLemak =
+                    (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble();
+                double baseKarbohidrat =
+                    (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0)
+                        .toDouble();
+
                 return {
                   'nama_makanan': item['nama_makanan'] ?? '',
                   'jumlah': item['jumlah'] ?? '',
-                  'kalori': kalori,
-                  'protein':
-                      (nutr['protein'] ?? item['protein'] ?? 0).toDouble(),
-                  'lemak': (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble(),
-                  'karbohidrat':
-                      (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0)
-                          .toDouble(),
+                  'kalori': (baseKalori * quantity).round(),
+                  'protein': (baseProtein * quantity),
+                  'lemak': (baseLemak * quantity),
+                  'karbohidrat': (baseKarbohidrat * quantity),
                 };
               }).toList()
               : [];
-      // Hitung total dari seluruh ingredients
+
+      // Calculate total from all ingredients with quantity
       double totalKalori = 0, totalKarbo = 0, totalProtein = 0, totalLemak = 0;
       for (final ing in ingredients) {
         totalKalori += (ing['kalori'] ?? 0).toDouble();
@@ -198,8 +305,8 @@ class _ResultPageState extends State<ResultPage> {
         totalProtein += (ing['protein'] ?? 0).toDouble();
         totalLemak += (ing['lemak'] ?? 0).toDouble();
       }
+
       final now = DateTime.now();
-      final mealType = 'Dinner';
       String foto = widget.imagePath;
       bool isFoto = widget.imagePath.isNotEmpty;
       final String? imageUrl =
@@ -210,8 +317,11 @@ class _ResultPageState extends State<ResultPage> {
         foto = imageUrl;
         isFoto = true;
       }
-      final url = 'http://192.168.0.107:8080/api/konsumsi/$konsumsiId';
+
+      final url =
+          'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/konsumsi/$konsumsiId';
       final requestBody = {
+        'id_user': userId,
         'nama_makanan': foodName,
         'kalori_total': totalKalori,
         'karbohidrat_total': totalKarbo,
@@ -222,9 +332,10 @@ class _ResultPageState extends State<ResultPage> {
         'is_foto': isFoto,
         'foto': foto,
         'soft_deleted': false,
-        'is_saved': false,
+        'is_saved': isSaved, // Use current saved status
         'nutrition_items': ingredients,
       };
+
       print('DEBUG: Making PUT request to: $url');
       print('DEBUG: Request body: ${jsonEncode(requestBody)}');
 
@@ -307,7 +418,6 @@ class _ResultPageState extends State<ResultPage> {
         totalLemak += (ing['lemak'] ?? 0).toDouble();
       }
       final now = DateTime.now();
-      final mealType = 'Dinner';
       String foto = widget.imagePath;
       bool isFoto = widget.imagePath.isNotEmpty;
       final String? imageUrl =
@@ -319,7 +429,9 @@ class _ResultPageState extends State<ResultPage> {
         isFoto = true;
       }
       final response = await http.post(
-        Uri.parse('http://192.168.0.107:8080/api/konsumsi'),
+        Uri.parse(
+          'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/konsumsi',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -388,7 +500,9 @@ class _ResultPageState extends State<ResultPage> {
         return;
       }
       final response = await http.delete(
-        Uri.parse('http://192.168.0.107:8080/api/konsumsi/$konsumsiId'),
+        Uri.parse(
+          'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/konsumsi/$konsumsiId',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -556,15 +670,18 @@ class _ResultPageState extends State<ResultPage> {
           } else if (item['calories'] != null) {
             kalori = (item['calories'] ?? 0).round();
           }
-
           updatedIngredients.add({
             'nama_makanan': item['nama_makanan'] ?? '',
             'jumlah': item['jumlah'] ?? '',
-            'kalori': kalori,
-            'protein': (nutr['protein'] ?? item['protein'] ?? 0).toDouble(),
-            'lemak': (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble(),
+            'kalori': (kalori * quantity).round(),
+            'protein':
+                ((nutr['protein'] ?? item['protein'] ?? 0).toDouble() *
+                    quantity),
+            'lemak':
+                ((nutr['lemak'] ?? item['lemak'] ?? 0).toDouble() * quantity),
             'karbohidrat':
-                (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0).toDouble(),
+                ((nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0).toDouble() *
+                    quantity),
           });
         }
       }
@@ -577,9 +694,7 @@ class _ResultPageState extends State<ResultPage> {
         totalProtein += (ing['protein'] ?? 0).toDouble();
         totalLemak += (ing['lemak'] ?? 0).toDouble();
       }
-
       final now = DateTime.now();
-      final mealType = 'Dinner';
       String foto = widget.imagePath;
       bool isFoto = widget.imagePath.isNotEmpty;
 
@@ -592,7 +707,8 @@ class _ResultPageState extends State<ResultPage> {
         isFoto = true;
       }
 
-      final url = 'http://192.168.0.107:8080/api/konsumsi/$konsumsiId';
+      final url =
+          'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/konsumsi/$konsumsiId';
       final requestBody = {
         'id_user': userId,
         'nama_makanan': foodName,
@@ -703,7 +819,9 @@ class _ResultPageState extends State<ResultPage> {
 
         // Send request to `/api/nutri-estimation`
         final response = await http.post(
-          Uri.parse('http://192.168.0.107:8080/api/nutri-estimation'),
+          Uri.parse(
+            'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/nutri-estimation',
+          ),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
@@ -794,9 +912,7 @@ class _ResultPageState extends State<ResultPage> {
         totalProtein += (ing['protein'] ?? 0).toDouble();
         totalLemak += (ing['lemak'] ?? 0).toDouble();
       }
-
       final now = DateTime.now();
-      final mealType = 'Dinner';
       String foto = widget.imagePath;
       bool isFoto = widget.imagePath.isNotEmpty;
 
@@ -809,7 +925,8 @@ class _ResultPageState extends State<ResultPage> {
         isFoto = true;
       }
 
-      final url = 'http://192.168.0.107:8080/api/konsumsi/$konsumsiId';
+      final url =
+          'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/konsumsi/$konsumsiId';
       final requestBody = {
         'id_user': userId,
         'nama_makanan': foodName,
@@ -822,7 +939,7 @@ class _ResultPageState extends State<ResultPage> {
         'is_foto': isFoto,
         'foto': foto,
         'soft_deleted': false,
-        'is_saved': false,
+        'is_saved': isSaved,
         'nutrition_items': updatedIngredients,
       };
 
@@ -843,6 +960,191 @@ class _ResultPageState extends State<ResultPage> {
     }
   }
 
+  Future<void> _toggleSaveMeal() async {
+    if (konsumsiId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot save meal: No consumption ID')),
+      );
+      return;
+    }
+
+    setState(() {
+      isSaving = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) {
+        throw Exception('User not logged in');
+      }
+
+      print(
+        'DEBUG: ${isSaved ? 'Unsaving' : 'Saving'} meal with ID: $konsumsiId',
+      );
+
+      if (isSaved) {
+        // Unsave meal - we need to implement this endpoint or use PUT to update is_saved to false
+        await _unsaveMeal(token);
+      } else {
+        // Save meal
+        await _saveMeal(token);
+      }
+
+      setState(() {
+        isSaved = !isSaved;
+        isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isSaved ? 'Meal saved successfully' : 'Meal unsaved successfully',
+          ),
+        ),
+      );
+
+      print('DEBUG: Meal ${isSaved ? 'saved' : 'unsaved'} successfully');
+    } catch (e) {
+      setState(() {
+        isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to ${isSaved ? 'unsave' : 'save'} meal: $e'),
+        ),
+      );
+
+      print('DEBUG: Error ${isSaved ? 'unsaving' : 'saving'} meal: $e');
+    }
+  }
+
+  Future<void> _saveMeal(String token) async {
+    final url =
+        'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/save_konsumsi/$konsumsiId';
+    print('DEBUG: Making POST request to save meal: $url');
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('DEBUG: Save meal response status: ${response.statusCode}');
+    print('DEBUG: Save meal response body: ${response.body}');
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Server responded with status ${response.statusCode}: ${response.body}',
+      );
+    }
+  }
+
+  Future<void> _unsaveMeal(String token) async {
+    // Use PUT endpoint to update is_saved status to false
+    final url =
+        'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/save_konsumsi/$konsumsiId';
+    print('DEBUG: Making PUT request to unsave meal: $url');
+
+    final response = await http.put(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'is_saved': false}),
+    );
+
+    print('DEBUG: Unsave response: ${response.statusCode} - ${response.body}');
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body)['error'] ?? 'Unknown error';
+      throw Exception('Failed to unsave meal: $error');
+    }
+  }
+
+  // Helper method to determine if path is URL or local file path
+  bool _isNetworkUrl(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
+  }
+
+  // Helper method to build appropriate image widget
+  Widget _buildFoodImage(String foodImage, String? imageUrl) {
+    print('DEBUG: Building food image - widget.imagePath: ${widget.imagePath}');
+    print('DEBUG: Building food image - imageUrl: $imageUrl');
+
+    // Priority: 1. Widget imagePath (if not empty), 2. imageUrl from nutrition result, 3. placeholder
+    if (widget.imagePath.isNotEmpty) {
+      if (_isNetworkUrl(widget.imagePath)) {
+        // Network URL (for saved meals)
+        print('DEBUG: Using network image: ${widget.imagePath}');
+        return Image.network(
+          widget.imagePath,
+          width: double.infinity,
+          height: 180,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('DEBUG: Network image error: $error');
+            return Image.asset(
+              'assets/images/placeholder.png',
+              width: double.infinity,
+              height: 180,
+              fit: BoxFit.cover,
+            );
+          },
+        );
+      } else {
+        // Local file path (for camera/gallery images)
+        print('DEBUG: Using local file image: ${widget.imagePath}');
+        return Image.file(
+          File(widget.imagePath),
+          width: double.infinity,
+          height: 180,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('DEBUG: File image error: $error');
+            return Image.asset(
+              'assets/images/placeholder.png',
+              width: double.infinity,
+              height: 180,
+              fit: BoxFit.cover,
+            );
+          },
+        );
+      }
+    } else if (imageUrl != null && imageUrl.isNotEmpty) {
+      // Use imageUrl from nutrition result
+      print('DEBUG: Using imageUrl from nutrition result: $imageUrl');
+      return Image.network(
+        imageUrl,
+        width: double.infinity,
+        height: 180,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          print('DEBUG: Nutrition result image error: $error');
+          return Image.asset(
+            'assets/images/placeholder.png',
+            width: double.infinity,
+            height: 180,
+            fit: BoxFit.cover,
+          );
+        },
+      );
+    } else {
+      // Default placeholder
+      print('DEBUG: Using placeholder image');
+      return Image.asset(
+        'assets/images/placeholder.png',
+        width: double.infinity,
+        height: 180,
+        fit: BoxFit.cover,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> item =
@@ -852,30 +1154,35 @@ class _ResultPageState extends State<ResultPage> {
             ? widget.imagePath
             : 'assets/images/placeholder.png';
     final String? imageUrl = item['image_url'];
-    final String mealType = 'Dinner';
-    final int quantity = 1;
-    // Build ingredients list & total nutrition
+
+    // Build ingredients list & total nutrition with quantity multiplier
     final List<Map<String, dynamic>> ingredients =
         widget.nutritionResult.isNotEmpty
             ? widget.nutritionResult.map<Map<String, dynamic>>((item) {
               final nutr = item['nutrition_total'] ?? {};
-              int kalori = 0;
+              int baseKalori = 0;
               if (nutr.isNotEmpty && nutr['kalori'] != null) {
-                kalori = (nutr['kalori'] ?? 0).round();
+                baseKalori = (nutr['kalori'] ?? 0).round();
               } else if (item['kalori'] != null) {
-                kalori = (item['kalori'] ?? 0).round();
+                baseKalori = (item['kalori'] ?? 0).round();
               } else if (item['calories'] != null) {
-                kalori = (item['calories'] ?? 0).round();
+                baseKalori = (item['calories'] ?? 0).round();
               }
+
+              double baseProtein =
+                  (nutr['protein'] ?? item['protein'] ?? 0).toDouble();
+              double baseLemak =
+                  (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble();
+              double baseKarbohidrat =
+                  (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0).toDouble();
+
               return {
                 'name': item['nama_makanan'] ?? '',
-                'kalori': kalori,
+                'kalori': (baseKalori * quantity).round(),
                 'jumlah': item['jumlah'] ?? '',
-                'protein': (nutr['protein'] ?? item['protein'] ?? 0).toDouble(),
-                'lemak': (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble(),
-                'karbohidrat':
-                    (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0)
-                        .toDouble(),
+                'protein': (baseProtein * quantity),
+                'lemak': (baseLemak * quantity),
+                'karbohidrat': (baseKarbohidrat * quantity),
               };
             }).toList()
             : [
@@ -903,9 +1210,7 @@ class _ResultPageState extends State<ResultPage> {
                 'lemak': 2,
                 'karbohidrat': 10,
               },
-            ];
-
-    // Hitung total nutrisi dari seluruh ingredient
+            ]; // Calculate total nutrition from all ingredients (already multiplied by quantity)
     int totalKalori = 0;
     double totalKarbo = 0, totalProtein = 0, totalLemak = 0;
     for (final ing in ingredients) {
@@ -921,20 +1226,38 @@ class _ResultPageState extends State<ResultPage> {
       'fats': totalLemak.round(),
     };
     final bool isNutritionZero = nutrition.values.every((v) => v == 0);
+
     // Tampilkan warning jika semua nutrisi 0
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.white,
         elevation: 0,
+        title:
+            widget.isViewMode
+                ? const Text(
+                  'Meal Details',
+                  style: TextStyle(color: AppColors.black, fontSize: 18),
+                )
+                : null,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_border, color: AppColors.black),
-            onPressed: () {},
-            tooltip: 'Save',
+            icon:
+                isSaving
+                    ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : Icon(
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: AppColors.black,
+                    ),
+            onPressed: isSaving ? null : _toggleSaveMeal,
+            tooltip: isSaved ? 'Unsave' : 'Save',
           ),
           IconButton(
             icon:
@@ -974,40 +1297,10 @@ class _ResultPageState extends State<ResultPage> {
                             style: TextStyle(color: Colors.black87),
                           ),
                         ),
-                      ),
-                    // Gambar makanan
+                      ), // Gambar makanan
                     ClipRRect(
                       borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-                      child:
-                          widget.imagePath.isNotEmpty
-                              ? Image.file(
-                                File(foodImage),
-                                width: double.infinity,
-                                height: 180,
-                                fit: BoxFit.cover,
-                                errorBuilder:
-                                    (context, error, stackTrace) => Image.asset(
-                                      'assets/images/placeholder.png',
-                                    ),
-                              )
-                              : (imageUrl != null
-                                  ? Image.network(
-                                    imageUrl,
-                                    width: double.infinity,
-                                    height: 180,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Image.asset(
-                                              'assets/images/placeholder.png',
-                                            ),
-                                  )
-                                  : Image.asset(
-                                    'assets/images/placeholder.png',
-                                    width: double.infinity,
-                                    height: 180,
-                                    fit: BoxFit.cover,
-                                  )),
+                      child: _buildFoodImage(foodImage, imageUrl),
                     ),
                     const SizedBox(height: AppBorderRadius.md),
                     Row(
@@ -1057,9 +1350,9 @@ class _ResultPageState extends State<ResultPage> {
                                       ),
                                     )
                                     .toList(),
-                            onChanged: (v) {},
+                            onChanged: _onMealTypeChanged,
                           ),
-                          const SizedBox(width: AppBorderRadius.md),
+                          const Spacer(),
                           Row(
                             children: [
                               IconButton(
@@ -1067,7 +1360,8 @@ class _ResultPageState extends State<ResultPage> {
                                   Icons.remove,
                                   size: AppIcons.md,
                                 ),
-                                onPressed: () {},
+                                onPressed:
+                                    quantity > 1 ? _decrementQuantity : null,
                               ),
                               Text(
                                 '$quantity',
@@ -1075,7 +1369,7 @@ class _ResultPageState extends State<ResultPage> {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.add, size: AppIcons.md),
-                                onPressed: () {},
+                                onPressed: _incrementQuantity,
                               ),
                             ],
                           ),
@@ -1163,6 +1457,7 @@ class _ResultPageState extends State<ResultPage> {
                       variant: ButtonVariant.primary,
                       onPressed: _addIngredient,
                     ),
+                    const SizedBox(height: AppBorderRadius.md),
                   ],
                 ),
               ),

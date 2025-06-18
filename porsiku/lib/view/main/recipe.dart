@@ -87,7 +87,9 @@ class _RecipePageState extends State<RecipePage> {
       }
 
       final response = await http.post(
-        Uri.parse('http://192.168.0.107:8080/api/resep'),
+        Uri.parse(
+          'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/resep',
+        ),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

@@ -126,7 +126,7 @@ class _ScanPageState extends State<ScanPage> {
       }
 
       final uri = Uri.parse(
-        'http://192.168.0.107:8080/api/produk?barcode=$barcode',
+        'https://porsiku-nutrition-estimation-tracker-production.up.railway.app/api/produk?barcode=$barcode',
       );
 
       final response = await http.get(
