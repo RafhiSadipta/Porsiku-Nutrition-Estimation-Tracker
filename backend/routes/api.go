@@ -34,6 +34,7 @@ func SetupRoutes() *gin.Engine {
 		api.POST("/konsumsi", controllers.CreateKonsumsi)
 		api.GET("/konsumsi", controllers.GetAllKonsumsi)
 		api.GET("/konsumsi/:id_user", controllers.GetKonsumsiByUserID)
+		api.GET("/konsumsi/item/:id", controllers.GetKonsumsiById)
 		api.POST("/save_konsumsi/:id", controllers.SaveKonsumsi)
 		api.GET("/save_konsumsi/:id_user", controllers.GetSavedKonsumsiByUser)
 		api.PUT("/konsumsi/:id", controllers.UpdateKonsumsi)

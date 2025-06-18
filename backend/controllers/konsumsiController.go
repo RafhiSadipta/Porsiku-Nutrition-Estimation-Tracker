@@ -64,6 +64,23 @@ func GetAllKonsumsi(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": list})
 }
 
+func GetKonsumsiById(c *gin.Context) {
+	id := c.Param("id") // ambil dari path URL
+
+	var konsumsiList []models.Konsumsi
+	if err := config.DB.Preload("NutritionItems").
+		Where("id = ?", id).
+		Find(&konsumsiList).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Data detil konsumsi ditemukan",
+		"data":    konsumsiList,
+	})
+}
+
 func GetKonsumsiByUserID(c *gin.Context) {
 	idUser := c.Param("id_user")
 
