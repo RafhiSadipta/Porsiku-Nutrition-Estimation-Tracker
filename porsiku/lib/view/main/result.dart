@@ -210,7 +210,7 @@ class _ResultPageState extends State<ResultPage> {
         foto = imageUrl;
         isFoto = true;
       }
-      final url = 'http://192.168.0.105:8080/api/konsumsi/$konsumsiId';
+      final url = 'http://192.168.0.107:8080/api/konsumsi/$konsumsiId';
       final requestBody = {
         'nama_makanan': foodName,
         'kalori_total': totalKalori,
@@ -319,7 +319,7 @@ class _ResultPageState extends State<ResultPage> {
         isFoto = true;
       }
       final response = await http.post(
-        Uri.parse('http://192.168.0.105:8080/api/konsumsi'),
+        Uri.parse('http://192.168.0.107:8080/api/konsumsi'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -388,7 +388,7 @@ class _ResultPageState extends State<ResultPage> {
         return;
       }
       final response = await http.delete(
-        Uri.parse('http://192.168.0.105:8080/api/konsumsi/$konsumsiId'),
+        Uri.parse('http://192.168.0.107:8080/api/konsumsi/$konsumsiId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -592,7 +592,7 @@ class _ResultPageState extends State<ResultPage> {
         isFoto = true;
       }
 
-      final url = 'http://192.168.0.105:8080/api/konsumsi/$konsumsiId';
+      final url = 'http://192.168.0.107:8080/api/konsumsi/$konsumsiId';
       final requestBody = {
         'id_user': userId,
         'nama_makanan': foodName,
@@ -636,6 +636,209 @@ class _ResultPageState extends State<ResultPage> {
       );
     } catch (e) {
       print('DEBUG: Error in _updateConsumptionAfterDeleteIngredient: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _addIngredient() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: AppColors.white,
+            title: const Text('Add Ingredient'),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Ingredient Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: AppColors.grey),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, controller.text.trim()),
+                child: const Text(
+                  'Add',
+                  style: TextStyle(color: AppColors.black),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => const AlertDialog(
+              backgroundColor: AppColors.white,
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 16),
+                  Text('Adding ingredient...'),
+                ],
+              ),
+            ),
+      );
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('token');
+        if (token == null) {
+          throw Exception('User not logged in');
+        }
+
+        // Send request to `/api/nutri-estimation`
+        final response = await http.post(
+          Uri.parse('http://192.168.0.107:8080/api/nutri-estimation'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({'food_list': result}),
+        );
+
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          final resultData = responseData['result'];
+          if (resultData != null && resultData.isNotEmpty) {
+            final newIngredient = resultData[0];
+
+            // Add ingredient to local state
+            setState(() {
+              widget.nutritionResult.add({
+                'nama_makanan': newIngredient['nama_makanan'] ?? '',
+                'jumlah': newIngredient['jumlah'] ?? '',
+                'nutrition_total': {
+                  'kalori': newIngredient['kalori'] ?? 0,
+                  'protein': newIngredient['protein'] ?? 0.0,
+                  'lemak': newIngredient['lemak'] ?? 0.0,
+                  'karbohidrat': newIngredient['karbohidrat'] ?? 0.0,
+                },
+              });
+            });
+
+            // Update consumption on backend
+            if (konsumsiId != null) {
+              await _updateConsumptionAfterAddIngredient();
+            }
+
+            // Close loading dialog
+            if (mounted) Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Ingredient added successfully')),
+            );
+          } else {
+            throw Exception('Invalid data format from backend');
+          }
+        } else {
+          throw Exception('Failed to add ingredient: ${response.body}');
+        }
+      } catch (e) {
+        // Close loading dialog
+        if (mounted) Navigator.pop(context);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to add ingredient: $e')));
+      }
+    }
+  }
+
+  Future<void> _updateConsumptionAfterAddIngredient() async {
+    if (konsumsiId == null) {
+      throw Exception('No consumption ID available');
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      final userId = prefs.getString('user_id');
+
+      if (token == null || userId == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Recalculate totals
+      double totalKalori = 0, totalKarbo = 0, totalProtein = 0, totalLemak = 0;
+      final List<Map<String, dynamic>> updatedIngredients =
+          widget.nutritionResult.map((item) {
+            final nutr = item['nutrition_total'] ?? {};
+            int kalori = (nutr['kalori'] ?? item['kalori'] ?? 0).round();
+            return {
+              'nama_makanan': item['nama_makanan'] ?? '',
+              'jumlah': item['jumlah'] ?? '',
+              'kalori': kalori,
+              'protein': (nutr['protein'] ?? item['protein'] ?? 0).toDouble(),
+              'lemak': (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble(),
+              'karbohidrat':
+                  (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0).toDouble(),
+            };
+          }).toList();
+
+      for (final ing in updatedIngredients) {
+        totalKalori += (ing['kalori'] ?? 0).toDouble();
+        totalKarbo += (ing['karbohidrat'] ?? 0).toDouble();
+        totalProtein += (ing['protein'] ?? 0).toDouble();
+        totalLemak += (ing['lemak'] ?? 0).toDouble();
+      }
+
+      final now = DateTime.now();
+      final mealType = 'Dinner';
+      String foto = widget.imagePath;
+      bool isFoto = widget.imagePath.isNotEmpty;
+
+      final String? imageUrl =
+          widget.nutritionResult.isNotEmpty
+              ? widget.nutritionResult[0]['image_url']
+              : null;
+      if (!isFoto && imageUrl != null && imageUrl.isNotEmpty) {
+        foto = imageUrl;
+        isFoto = true;
+      }
+
+      final url = 'http://192.168.0.107:8080/api/konsumsi/$konsumsiId';
+      final requestBody = {
+        'id_user': userId,
+        'nama_makanan': foodName,
+        'kalori_total': totalKalori,
+        'karbohidrat_total': totalKarbo,
+        'protein_total': totalProtein,
+        'lemak_total': totalLemak,
+        'waktu_makan': mealType,
+        'tanggal': now.toUtc().toIso8601String(),
+        'is_foto': isFoto,
+        'foto': foto,
+        'soft_deleted': false,
+        'is_saved': false,
+        'nutrition_items': updatedIngredients,
+      };
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update consumption: ${response.body}');
+      }
+    } catch (e) {
       rethrow;
     }
   }
@@ -958,7 +1161,7 @@ class _ResultPageState extends State<ResultPage> {
                     Button(
                       text: '+ Add Ingredients',
                       variant: ButtonVariant.primary,
-                      onPressed: () {},
+                      onPressed: _addIngredient,
                     ),
                   ],
                 ),

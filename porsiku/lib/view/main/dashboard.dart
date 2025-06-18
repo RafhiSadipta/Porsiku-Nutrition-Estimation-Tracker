@@ -103,7 +103,7 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       // Fetch daily target
       final targetResp = await http.get(
-        Uri.parse('http://192.168.0.105:8080/api/daily_target/$userId'),
+        Uri.parse('http://192.168.0.107:8080/api/daily_target/$userId'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (targetResp.statusCode == 200) {
@@ -119,7 +119,7 @@ class _DashboardPageState extends State<DashboardPage>
       }
       // Fetch daily consumption summary
       final konsumsiResp = await http.get(
-        Uri.parse('http://192.168.0.105:8080/api/konsumsi/$userId'),
+        Uri.parse('http://192.168.0.107:8080/api/konsumsi/$userId'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (konsumsiResp.statusCode == 200) {
@@ -184,7 +184,7 @@ class _DashboardPageState extends State<DashboardPage>
       };
 
       final response = await http.post(
-        Uri.parse('http://192.168.0.105:8080/api/resep'),
+        Uri.parse('http://192.168.0.107:8080/api/resep'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -698,139 +698,144 @@ class _RecipeCarousel extends StatelessWidget {
             viewportFraction: 0.9,
             aspectRatio: 2.0,
             onPageChanged: onPageChanged,
-          ),          items: recommendations.map((rec) {
-            return Builder(
-              builder: (BuildContext context) {
-                return GestureDetector(
-                  onTap: () {
-                    // Navigate to recipe detail page
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => RecipeOpenPage(recipe: rec),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    width: MediaQuery.of(context).size.width,
-                    margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                      image: DecorationImage(
-                        image: NetworkImage(rec['image']),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    child: Stack(
-                        children: [
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(8.0),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.5),
-                                borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(
-                                    AppBorderRadius.md,
-                                  ),
-                                  bottomRight: Radius.circular(
-                                    AppBorderRadius.md,
-                                  ),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    rec['title'],
-                                    style: TextStyle(
-                                      fontSize: AppTexts.md,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.white,
+          ),
+          items:
+              recommendations.map((rec) {
+                return Builder(
+                  builder: (BuildContext context) {
+                    return GestureDetector(
+                      onTap: () {
+                        // Navigate to recipe detail page
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => RecipeOpenPage(recipe: rec),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: MediaQuery.of(context).size.width,
+                        margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(
+                            AppBorderRadius.md,
+                          ),
+                          image: DecorationImage(
+                            image: NetworkImage(rec['image']),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(8.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  borderRadius: BorderRadius.only(
+                                    bottomLeft: Radius.circular(
+                                      AppBorderRadius.md,
+                                    ),
+                                    bottomRight: Radius.circular(
+                                      AppBorderRadius.md,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      rec['title'],
+                                      style: TextStyle(
+                                        fontSize: AppTexts.md,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '${rec['calories']}cal',
+                                          style: TextStyle(
+                                            fontSize: AppTexts.sm,
+                                            color: AppColors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${rec['protein']}g Prot',
+                                          style: TextStyle(
+                                            fontSize: AppTexts.sm,
+                                            color: AppColors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${rec['weight']}g',
+                                          style: TextStyle(
+                                            fontSize: AppTexts.sm,
+                                            color: AppColors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${rec['fiber']}g Fiber',
+                                          style: TextStyle(
+                                            fontSize: AppTexts.sm,
+                                            color: AppColors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (rec['duration'] != null)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.7),
+                                    borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.sm,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(
-                                        '${rec['calories']}cal',
-                                        style: TextStyle(
-                                          fontSize: AppTexts.sm,
-                                          color: AppColors.white,
-                                        ),
+                                      Icon(
+                                        Icons.timer_outlined,
+                                        color: AppColors.white,
+                                        size: AppTexts.sm,
                                       ),
+                                      const SizedBox(width: 4),
                                       Text(
-                                        '${rec['protein']}g Prot',
+                                        rec['duration'],
                                         style: TextStyle(
-                                          fontSize: AppTexts.sm,
-                                          color: AppColors.white,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${rec['weight']}g',
-                                        style: TextStyle(
-                                          fontSize: AppTexts.sm,
-                                          color: AppColors.white,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${rec['fiber']}g Fiber',
-                                        style: TextStyle(
-                                          fontSize: AppTexts.sm,
+                                          fontSize: AppTexts.xs,
                                           color: AppColors.white,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                          ),
-                          if (rec['duration'] != null)
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.7),
-                                  borderRadius: BorderRadius.circular(
-                                    AppBorderRadius.sm,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.timer_outlined,
-                                      color: AppColors.white,
-                                      size: AppTexts.sm,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      rec['duration'],
-                                      style: TextStyle(
-                                        fontSize: AppTexts.xs,
-                                        color: AppColors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),                              ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              );
-            }).toList(),
+                    );
+                  },
+                );
+              }).toList(),
         ),
         const SizedBox(height: 8),
         Row(
