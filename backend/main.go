@@ -5,12 +5,12 @@ import (
 	"backend/models"
 	"backend/routes"
 	"log"
+	"os"
 )
 
 func main() {
-	config.InitDB() // pastikan ini sukses konek DB
+	config.InitDB()
 
-	// Lakukan migrasi ke DB
 	err := config.DB.AutoMigrate(
 		&models.Users{},
 		&models.Estimasi{},
@@ -22,7 +22,16 @@ func main() {
 		log.Fatal("Gagal AutoMigrate:", err)
 	}
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Println("⚠️  PORT not set, defaulting to 8080 (local dev mode)")
+	}
+
+	log.Println("🚀 Server running on port:", port)
 	r := routes.SetupRoutes()
-	// Pastikan listen di 0.0.0.0 agar bisa diakses dari emulator Android
-	r.Run("0.0.0.0:8080")
+	err = r.Run("0.0.0.0:" + port)
+	if err != nil {
+		log.Fatal("Gagal menjalankan server:", err)
+	}
 }
