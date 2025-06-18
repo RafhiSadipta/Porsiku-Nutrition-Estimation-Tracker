@@ -17,6 +17,7 @@ import 'package:porsiku/view/main/recipe_open.dart';
 import 'package:porsiku/constants/constants.dart';
 import 'package:porsiku/view/main/textinput.dart';
 import 'package:porsiku/view/main/audioinput.dart';
+import 'package:porsiku/view/main/result.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -142,6 +143,7 @@ class _DashboardPageState extends State<DashboardPage>
             totalLem += (item['lemak_total'] ?? 0).toDouble();
             totalKar += (item['karbohidrat_total'] ?? 0).toDouble();
             logs.add({
+              'id': item['id'],
               'title': item['nama_makanan'] ?? '-',
               'calories': (item['kalori_total'] ?? 0).round(),
               'mass': item['waktu_makan'] ?? '',
@@ -150,6 +152,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ? item['foto']
                       : 'assets/images/placeholder.png',
               'is_foto': item['is_foto'] ?? false,
+              'nutritionResult': [item],
             });
           }
         }
@@ -581,6 +584,48 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
+  Future<void> _deleteConsumption(Map<String, dynamic> activity) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) return;
+    // Asumsikan backend butuh id konsumsi, pastikan field id tersedia di activity
+    final konsumsiId = activity['id'] ?? activity['konsumsi_id'];
+    if (konsumsiId == null) return;
+    final response = await http.delete(
+      Uri.parse('http://192.168.0.107:8080/api/konsumsi/$konsumsiId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      _fetchTodayGoalAndRecentActivity();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Konsumsi berhasil dihapus')));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menghapus konsumsi')));
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchKonsumsiDetail(int konsumsiId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) return null;
+    final response = await http.get(
+      Uri.parse('http://192.168.0.107:8080/api/konsumsi/item/$konsumsiId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['data'] != null &&
+          data['data'] is List &&
+          data['data'].isNotEmpty) {
+        return data['data'][0];
+      }
+    }
+    return null;
+  }
+
   Widget _buildRecentActivityContent(
     List<Map<String, dynamic>> recentActivity,
   ) {
@@ -659,14 +704,94 @@ class _DashboardPageState extends State<DashboardPage>
           subtitle: Text('${activity['calories']} cal, ${activity['mass']}'),
           trailing: IconButton(
             icon: Icon(Icons.close, color: Colors.grey, size: 20.0),
-            onPressed: () {
-              // TODO: Implement delete recent activity
-              setState(() {
-                // recentActivity.removeAt(index);
-              });
+            onPressed: () async {
+              await _deleteConsumption(activity);
             },
           ),
           contentPadding: EdgeInsets.zero,
+          onTap: () async {
+            final konsumsiIdRaw = activity['id'];
+            if (konsumsiIdRaw == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('ID konsumsi tidak ditemukan')),
+              );
+              return;
+            }
+            final konsumsiId =
+                konsumsiIdRaw is int
+                    ? konsumsiIdRaw
+                    : int.tryParse(konsumsiIdRaw.toString());
+            if (konsumsiId == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('ID konsumsi tidak valid')),
+              );
+              return;
+            }
+
+            // Tampilkan loading
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder:
+                  (context) => const Center(child: CircularProgressIndicator()),
+            );
+
+            final konsumsiDetail = await fetchKonsumsiDetail(konsumsiId);
+
+            // Tutup loading
+            if (Navigator.canPop(context)) Navigator.pop(context);
+
+            if (konsumsiDetail != null) {
+              final nutritionItems =
+                  konsumsiDetail['nutrition_items'] as List<dynamic>?;
+              final nutritionResult =
+                  nutritionItems != null
+                      ? nutritionItems
+                          .map(
+                            (item) => {
+                              'nama_makanan': item['nama_makanan'] ?? '',
+                              'jumlah': item['jumlah'] ?? '',
+                              'nutrition_total': {
+                                'kalori': item['kalori'] ?? 0,
+                                'protein': item['protein'] ?? 0.0,
+                                'lemak': item['lemak'] ?? 0.0,
+                                'karbohidrat': item['karbohidrat'] ?? 0.0,
+                              },
+                            },
+                          )
+                          .toList()
+                      : [
+                        {
+                          'nama_makanan': konsumsiDetail['nama_makanan'] ?? '',
+                          'jumlah': '1 serving',
+                          'nutrition_total': {
+                            'kalori': konsumsiDetail['kalori_total'] ?? 0,
+                            'protein': konsumsiDetail['protein_total'] ?? 0,
+                            'lemak': konsumsiDetail['lemak_total'] ?? 0,
+                            'karbohidrat':
+                                konsumsiDetail['karbohidrat_total'] ?? 0,
+                          },
+                        },
+                      ];
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => ResultPage(
+                        foodListText: konsumsiDetail['nama_makanan'] ?? '',
+                        nutritionResult: nutritionResult,
+                        imagePath: konsumsiDetail['foto'] ?? '',
+                      ),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Gagal mengambil detail konsumsi'),
+                ),
+              );
+            }
+          },
         );
       },
       separatorBuilder:
@@ -705,7 +830,6 @@ class _RecipeCarousel extends StatelessWidget {
                   builder: (BuildContext context) {
                     return GestureDetector(
                       onTap: () {
-                        // Navigate to recipe detail page
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => RecipeOpenPage(recipe: rec),
