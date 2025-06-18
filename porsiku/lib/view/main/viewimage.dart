@@ -98,63 +98,7 @@ class _ViewImagePageState extends State<ViewImagePage> {
         throw Exception('Invalid nutrition result');
       }
 
-      // 3. Tambahkan log konsumsi ke backend
-      final idUser = prefs.getString('user_id') ?? '';
-      if (idUser.isEmpty) throw Exception('User ID tidak ditemukan.');
-      // Ambil nama makanan dari hasil deteksi (bisa dari foodListText, pisahkan dengan koma jika perlu)
-      String namaMakanan = '';
-      try {
-        // Coba parse foodListText sebagai array string
-        var foodList = jsonDecode(foodListText);
-        if (foodList is List) {
-          namaMakanan = foodList.join(', ');
-        } else {
-          namaMakanan = foodListText;
-        }
-      } catch (_) {
-        namaMakanan = foodListText;
-      }
-      // Hitung total kalori, protein, karbohidrat, lemak
-      double kaloriTotal = 0, proteinTotal = 0, karboTotal = 0, lemakTotal = 0;
-      for (var item in nutritionResult) {
-        kaloriTotal += (item['kalori'] ?? 0).toDouble();
-        proteinTotal += (item['protein'] ?? 0).toDouble();
-        karboTotal += (item['karbohidrat'] ?? 0).toDouble();
-        lemakTotal += (item['lemak'] ?? 0).toDouble();
-      }
-      // Set waktu makan dan tanggal (sementara default breakfast dan sekarang)
-      String waktuMakan = 'breakfast';
-      String tanggal = DateTime.now().toUtc().toIso8601String();
-      // Foto: sementara pakai path lokal, atau bisa upload ke storage jika perlu
-      String foto = widget.imagePath;
-      bool isFoto = true;
-      // Kirim ke backend
-      final konsumsiResponse = await http.post(
-        Uri.parse('http://192.168.0.105:8080/api/konsumsi'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'id_user': idUser,
-          'nama_makanan': namaMakanan,
-          'kalori_total': kaloriTotal,
-          'protein_total': proteinTotal,
-          'karbohidrat_total': karboTotal,
-          'lemak_total': lemakTotal,
-          'foto': foto,
-          'is_foto': isFoto,
-          'waktu_makan': waktuMakan,
-          'tanggal': tanggal,
-          'nutrition_items': nutritionResult,
-        }),
-      );
-      if (konsumsiResponse.statusCode != 200) {
-        throw Exception(
-          'Gagal menambah log konsumsi: ${konsumsiResponse.body}',
-        );
-      }
-
+      // Navigate to ResultPage - let ResultPage handle the consumption logging
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(

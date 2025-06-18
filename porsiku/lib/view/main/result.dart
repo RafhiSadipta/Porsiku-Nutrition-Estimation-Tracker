@@ -43,41 +43,128 @@ class _ResultPageState extends State<ResultPage> {
       context: context,
       builder:
           (context) => AlertDialog(
+            backgroundColor: AppColors.white,
             title: const Text('Edit Food Name'),
             content: TextField(
               controller: controller,
               autofocus: true,
-              decoration: const InputDecoration(hintText: 'Food Name'),
+              decoration: const InputDecoration(
+                hintText: 'Food Name',
+                border: OutlineInputBorder(),
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: AppColors.grey),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, controller.text.trim()),
-                child: const Text('Save'),
+                child: const Text(
+                  'Save',
+                  style: TextStyle(color: AppColors.black),
+                ),
               ),
             ],
           ),
     );
-    if (result != null && result.isNotEmpty) {
-      setState(() {
-        foodName = result;
-      });
-      // Jika sudah ada konsumsiId, lakukan PUT ke backend
-      if (konsumsiId != null) {
-        await _updateFoodNameOnBackend();
+
+    if (result != null && result.isNotEmpty && result != foodName) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => const AlertDialog(
+              backgroundColor: AppColors.white,
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 16),
+                  Text('Updating food name...'),
+                ],
+              ),
+            ),
+      );
+
+      try {
+        print('DEBUG: Starting food name update...');
+        print('DEBUG: Old name: $foodName');
+        print('DEBUG: New name: $result');
+        print('DEBUG: konsumsiId: $konsumsiId');
+
+        // Update local state first
+        setState(() {
+          foodName = result;
+        });
+
+        // Update on backend if konsumsiId exists
+        if (konsumsiId != null) {
+          print('DEBUG: Calling _updateFoodNameOnBackend...');
+          await _updateFoodNameOnBackend();
+          print('DEBUG: _updateFoodNameOnBackend completed successfully');
+        } else {
+          print('DEBUG: konsumsiId is null, skipping backend update');
+        }
+
+        // Close loading dialog
+        if (mounted) Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Food name updated successfully')),
+        );
+        print('DEBUG: Successfully completed food name update');
+      } catch (e) {
+        print('DEBUG: Exception occurred: $e');
+        print('DEBUG: Exception type: ${e.runtimeType}');
+
+        // Close loading dialog
+        if (mounted) Navigator.pop(context);
+
+        // Revert local state on error
+        setState(() {
+          foodName =
+              widget.nutritionResult.isNotEmpty
+                  ? widget.nutritionResult[0]['nama_makanan'] ??
+                      'Unknown Product'
+                  : 'Unknown Product';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update food name: $e')),
+        );
       }
     }
   }
 
   Future<void> _updateFoodNameOnBackend() async {
+    print('DEBUG: _updateFoodNameOnBackend called');
+    print('DEBUG: konsumsiId = $konsumsiId');
+
+    if (konsumsiId == null) {
+      print('DEBUG: konsumsiId is null, throwing exception');
+      throw Exception('No consumption ID available');
+    }
+
     try {
+      print('DEBUG: Getting SharedPreferences...');
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
-      if (token == null) return;
-      // Ambil seluruh ingredients
+      final userId = prefs.getString('user_id');
+      if (token == null) {
+        print('DEBUG: Token is null, throwing exception');
+        throw Exception('User not logged in');
+      }
+      if (userId == null) {
+        print('DEBUG: User ID is null, throwing exception');
+        throw Exception('User ID not found');
+      }
+
+      print('DEBUG: Token found: ${token.substring(0, 20)}...');
+      print('DEBUG: User ID: $userId'); // Ambil seluruh ingredients
       final List<Map<String, dynamic>> ingredients =
           widget.nutritionResult.isNotEmpty
               ? widget.nutritionResult.map<Map<String, dynamic>>((item) {
@@ -123,40 +210,51 @@ class _ResultPageState extends State<ResultPage> {
         foto = imageUrl;
         isFoto = true;
       }
-      final response = await http.put(
-        Uri.parse('http://192.168.0.105:8080/api/konsumsi/$konsumsiId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'nama_makanan': foodName,
-          'kalori_total': totalKalori,
-          'karbohidrat_total': totalKarbo,
-          'protein_total': totalProtein,
-          'lemak_total': totalLemak,
-          'waktu_makan': mealType,
-          'tanggal': now.toUtc().toIso8601String(),
-          'is_foto': isFoto,
-          'foto': foto,
-          'nutrition_items': ingredients,
-        }),
-      );
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nama makanan berhasil diupdate.')),
+      final url = 'http://192.168.0.105:8080/api/konsumsi/$konsumsiId';
+      final requestBody = {
+        'nama_makanan': foodName,
+        'kalori_total': totalKalori,
+        'karbohidrat_total': totalKarbo,
+        'protein_total': totalProtein,
+        'lemak_total': totalLemak,
+        'waktu_makan': mealType,
+        'tanggal': now.toUtc().toIso8601String(),
+        'is_foto': isFoto,
+        'foto': foto,
+        'soft_deleted': false,
+        'is_saved': false,
+        'nutrition_items': ingredients,
+      };
+      print('DEBUG: Making PUT request to: $url');
+      print('DEBUG: Request body: ${jsonEncode(requestBody)}');
+
+      try {
+        final response = await http.put(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(requestBody),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal update nama makanan: {response.body}'),
-          ),
-        );
+
+        print('DEBUG: Response status code: ${response.statusCode}');
+        print('DEBUG: Response body: ${response.body}');
+
+        if (response.statusCode != 200) {
+          throw Exception(
+            'Server responded with status ${response.statusCode}: ${response.body}',
+          );
+        }
+
+        print('DEBUG: PUT request completed successfully');
+      } catch (httpError) {
+        print('DEBUG: HTTP request failed: $httpError');
+        print('DEBUG: HTTP error type: ${httpError.runtimeType}');
+        rethrow;
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal update nama makanan: $e')));
+      rethrow; // Re-throw the exception to be handled by the calling function
     }
   }
 
@@ -242,8 +340,15 @@ class _ResultPageState extends State<ResultPage> {
       );
       if (response.statusCode == 200) {
         final resp = jsonDecode(response.body);
+        print('DEBUG: Full response from POST konsumsi: $resp');
+
+        // Backend returns: {"message": "...", "data": konsumsiObject}
+        // ID is in resp['data']['id']
+        final newKonsumsiId = resp['data']?['id']?.toString();
+        print('DEBUG: Extracted konsumsiId: $newKonsumsiId');
+
         setState(() {
-          konsumsiId = resp['id_konsumsi']?.toString();
+          konsumsiId = newKonsumsiId;
           isLoading = false;
         });
         // Jangan auto-pop, biarkan user menutup halaman secara manual
@@ -282,13 +387,12 @@ class _ResultPageState extends State<ResultPage> {
         });
         return;
       }
-      final response = await http.put(
+      final response = await http.delete(
         Uri.parse('http://192.168.0.105:8080/api/konsumsi/$konsumsiId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'soft_deleted': true}),
       );
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -310,11 +414,236 @@ class _ResultPageState extends State<ResultPage> {
     });
   }
 
+  Future<void> _deleteIngredient(int ingredientIndex) async {
+    if (konsumsiId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete ingredient: No consumption ID'),
+        ),
+      );
+      return;
+    }
+
+    // Check if this is the last ingredient
+    if (widget.nutritionResult.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot delete the last ingredient')),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: AppColors.white,
+            title: const Text('Delete Ingredient'),
+            content: Text(
+              'Are you sure you want to delete "${widget.nutritionResult[ingredientIndex]['nama_makanan'] ?? 'this ingredient'}"?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: AppColors.grey),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: AppColors.red),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => const AlertDialog(
+            backgroundColor: AppColors.white,
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text('Deleting ingredient...'),
+              ],
+            ),
+          ),
+    );
+
+    try {
+      print('DEBUG: Starting ingredient deletion...');
+      print('DEBUG: Deleting ingredient at index: $ingredientIndex');
+      print(
+        'DEBUG: Ingredient name: ${widget.nutritionResult[ingredientIndex]['nama_makanan']}',
+      );
+      print(
+        'DEBUG: Ingredient ID (if exists): ${widget.nutritionResult[ingredientIndex]['id']}',
+      );
+      print(
+        'DEBUG: Total ingredients before deletion: ${widget.nutritionResult.length}',
+      );
+
+      await _updateConsumptionAfterDeleteIngredient(ingredientIndex);
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingredient deleted successfully')),
+      );
+
+      // Update local state by removing the ingredient
+      setState(() {
+        widget.nutritionResult.removeAt(ingredientIndex);
+      });
+
+      print('DEBUG: Ingredient deletion completed successfully');
+    } catch (e) {
+      print('DEBUG: Exception occurred during ingredient deletion: $e');
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete ingredient: $e')),
+      );
+    }
+  }
+
+  Future<void> _updateConsumptionAfterDeleteIngredient(
+    int ingredientIndex,
+  ) async {
+    print('DEBUG: _updateConsumptionAfterDeleteIngredient called');
+    print('DEBUG: konsumsiId = $konsumsiId');
+
+    if (konsumsiId == null) {
+      throw Exception('No consumption ID available');
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      final userId = prefs.getString('user_id');
+
+      if (token == null || userId == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Create new ingredients list without the deleted ingredient
+      final List<Map<String, dynamic>> updatedIngredients = [];
+
+      for (int i = 0; i < widget.nutritionResult.length; i++) {
+        if (i != ingredientIndex) {
+          // Skip the ingredient to be deleted
+          final item = widget.nutritionResult[i];
+          final nutr = item['nutrition_total'] ?? {};
+          int kalori = 0;
+          if (nutr.isNotEmpty && nutr['kalori'] != null) {
+            kalori = (nutr['kalori'] ?? 0).round();
+          } else if (item['kalori'] != null) {
+            kalori = (item['kalori'] ?? 0).round();
+          } else if (item['calories'] != null) {
+            kalori = (item['calories'] ?? 0).round();
+          }
+
+          updatedIngredients.add({
+            'nama_makanan': item['nama_makanan'] ?? '',
+            'jumlah': item['jumlah'] ?? '',
+            'kalori': kalori,
+            'protein': (nutr['protein'] ?? item['protein'] ?? 0).toDouble(),
+            'lemak': (nutr['lemak'] ?? item['lemak'] ?? 0).toDouble(),
+            'karbohidrat':
+                (nutr['karbohidrat'] ?? item['karbohidrat'] ?? 0).toDouble(),
+          });
+        }
+      }
+
+      // Calculate new totals from remaining ingredients
+      double totalKalori = 0, totalKarbo = 0, totalProtein = 0, totalLemak = 0;
+      for (final ing in updatedIngredients) {
+        totalKalori += (ing['kalori'] ?? 0).toDouble();
+        totalKarbo += (ing['karbohidrat'] ?? 0).toDouble();
+        totalProtein += (ing['protein'] ?? 0).toDouble();
+        totalLemak += (ing['lemak'] ?? 0).toDouble();
+      }
+
+      final now = DateTime.now();
+      final mealType = 'Dinner';
+      String foto = widget.imagePath;
+      bool isFoto = widget.imagePath.isNotEmpty;
+
+      final String? imageUrl =
+          widget.nutritionResult.isNotEmpty
+              ? widget.nutritionResult[0]['image_url']
+              : null;
+      if (!isFoto && imageUrl != null && imageUrl.isNotEmpty) {
+        foto = imageUrl;
+        isFoto = true;
+      }
+
+      final url = 'http://192.168.0.105:8080/api/konsumsi/$konsumsiId';
+      final requestBody = {
+        'id_user': userId,
+        'nama_makanan': foodName,
+        'kalori_total': totalKalori,
+        'karbohidrat_total': totalKarbo,
+        'protein_total': totalProtein,
+        'lemak_total': totalLemak,
+        'waktu_makan': mealType,
+        'tanggal': now.toUtc().toIso8601String(),
+        'is_foto': isFoto,
+        'foto': foto,
+        'soft_deleted': false,
+        'is_saved': false,
+        'nutrition_items': updatedIngredients,
+      };
+
+      print('DEBUG: Making PUT request to: $url');
+      print('DEBUG: Updated ingredients count: ${updatedIngredients.length}');
+      print('DEBUG: Request body: ${jsonEncode(requestBody)}');
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print('DEBUG: Response status code: ${response.statusCode}');
+      print('DEBUG: Response body: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Server responded with status ${response.statusCode}: ${response.body}',
+        );
+      }
+
+      print(
+        'DEBUG: PUT request for ingredient deletion completed successfully',
+      );
+    } catch (e) {
+      print('DEBUG: Error in _updateConsumptionAfterDeleteIngredient: $e');
+      rethrow;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> item =
         widget.nutritionResult.isNotEmpty ? widget.nutritionResult[0] : {};
-    final String foodName = item['nama_makanan'] ?? 'Unknown Product';
     final String foodImage =
         widget.imagePath.isNotEmpty
             ? widget.imagePath
@@ -619,7 +948,7 @@ class _ResultPageState extends State<ResultPage> {
                                 Icons.close,
                                 color: AppColors.red,
                               ),
-                              onPressed: () {},
+                              onPressed: () => _deleteIngredient(index),
                             ),
                           );
                         },
@@ -631,15 +960,6 @@ class _ResultPageState extends State<ResultPage> {
                       variant: ButtonVariant.primary,
                       onPressed: () {},
                     ),
-                    // Pada bagian bawah sebelum akhir Column, tambahkan tombol Selesai jika log sukses
-                    if (!isLoading && konsumsiId != null)
-                      Button(
-                        text: 'Selesai',
-                        variant: ButtonVariant.primary,
-                        onPressed: () {
-                          Navigator.of(context).pop('refresh');
-                        },
-                      ),
                   ],
                 ),
               ),
