@@ -1185,32 +1185,7 @@ class _ResultPageState extends State<ResultPage> {
                 'karbohidrat': (baseKarbohidrat * quantity),
               };
             }).toList()
-            : [
-              {
-                'name': 'Nasi',
-                'kalori': 270,
-                'jumlah': '150g',
-                'protein': 4,
-                'lemak': 1,
-                'karbohidrat': 60,
-              },
-              {
-                'name': 'Ayam Pop',
-                'kalori': 270,
-                'jumlah': '150g',
-                'protein': 20,
-                'lemak': 15,
-                'karbohidrat': 0,
-              },
-              {
-                'name': 'Sambal',
-                'kalori': 270,
-                'jumlah': '150g',
-                'protein': 1,
-                'lemak': 2,
-                'karbohidrat': 10,
-              },
-            ]; // Calculate total nutrition from all ingredients (already multiplied by quantity)
+            : [];
     int totalKalori = 0;
     double totalKarbo = 0, totalProtein = 0, totalLemak = 0;
     for (final ing in ingredients) {
