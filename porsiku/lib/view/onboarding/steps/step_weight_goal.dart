@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:porsiku/components/title.dart';
 import 'package:porsiku/constants/constants.dart';
 
@@ -20,15 +21,15 @@ class StepWeightGoal extends StatelessWidget {
     final isGain = diff > 0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // Title and subtitle
           TitleText(text: 'Target berat badanmu?'),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           SubtitleText(text: 'Masukkan berat badan yang ingin dicapai (kg)'),
-          const SizedBox(height: AppSpacing.xl),
+          SizedBox(height: AppSpacing.xl),
 
           // Premium cards for weight comparison
           Row(
@@ -36,7 +37,7 @@ class StepWeightGoal extends StatelessWidget {
               // Current weight card
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -50,7 +51,7 @@ class StepWeightGoal extends StatelessWidget {
                         color: AppColors.textSecondary,
                         size: 24,
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(height: AppSpacing.sm),
                       Text(
                         '$currentWeight kg',
                         style: AppTextStyles.h3.copyWith(
@@ -58,7 +59,7 @@ class StepWeightGoal extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.xs),
+                      SizedBox(height: AppSpacing.xs),
                       Text(
                         'Saat ini',
                         style: AppTextStyles.caption.copyWith(
@@ -69,18 +70,17 @@ class StepWeightGoal extends StatelessWidget {
                   ),
                 ),
               ),
-
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.lg),
 
               // Arrow icon
               Icon(Icons.arrow_forward, color: AppColors.primary, size: 24),
 
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.lg),
 
               // Target weight card
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -93,7 +93,7 @@ class StepWeightGoal extends StatelessWidget {
                   child: Column(
                     children: [
                       Icon(Icons.flag, color: AppColors.primary, size: 24),
-                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(height: AppSpacing.sm),
                       Text(
                         '$targetWeight kg',
                         style: AppTextStyles.h3.copyWith(
@@ -101,7 +101,7 @@ class StepWeightGoal extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.xs),
+                      SizedBox(height: AppSpacing.xs),
                       Text(
                         'Target',
                         style: AppTextStyles.caption.copyWith(
@@ -115,18 +115,16 @@ class StepWeightGoal extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: AppSpacing.xl),
-
-          // Premium wheel selector
+          SizedBox(height: AppSpacing.xl), // Premium wheel selector
           Container(
-            height: 180,
+            height: 180.h,
             decoration: BoxDecoration(
               color: AppColors.background,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.lightGrey, width: 1),
             ),
             child: ListWheelScrollView.useDelegate(
-              itemExtent: 48,
+              itemExtent: 48.h,
               diameterRatio: 1.2,
               physics: const FixedExtentScrollPhysics(),
               onSelectedItemChanged: onTargetWeightChanged,
@@ -138,7 +136,7 @@ class StepWeightGoal extends StatelessWidget {
                   return Center(
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.md,
                         vertical: AppSpacing.xs,
                       ),
@@ -169,11 +167,11 @@ class StepWeightGoal extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: AppSpacing.lg),
+          SizedBox(height: AppSpacing.lg),
 
           // Weight difference indicator
           Container(
-            padding: const EdgeInsets.symmetric(
+            padding: EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
               vertical: AppSpacing.md,
             ),
@@ -212,7 +210,7 @@ class StepWeightGoal extends StatelessWidget {
                           : AppColors.primary,
                   size: 20,
                 ),
-                const SizedBox(width: AppSpacing.sm),
+                SizedBox(width: AppSpacing.sm),
                 Text(
                   isIdeal
                       ? 'Berat badanmu sudah ideal!'

@@ -46,7 +46,7 @@ class AuthStartPage extends StatelessWidget {
                 Button(
                   text: 'Continue With Email',
                   variant: ButtonVariant.primary,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.mail_outline,
                     color: AppColors.white,
                     size: AppIcons.md,
@@ -63,7 +63,7 @@ class AuthStartPage extends StatelessWidget {
                 Button(
                   text: 'Continue With Google',
                   variant: ButtonVariant.primary,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.g_mobiledata,
                     color: AppColors.white,
                     size: AppIcons.md,
@@ -78,7 +78,7 @@ class AuthStartPage extends StatelessWidget {
                 Button(
                   text: 'Log In With Email',
                   variant: ButtonVariant.secondary,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.badge_outlined,
                     color: AppColors.black,
                     size: AppIcons.md,
@@ -95,7 +95,7 @@ class AuthStartPage extends StatelessWidget {
                 Button(
                   text: 'Scan',
                   variant: ButtonVariant.secondary,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.qr_code_scanner,
                     color: AppColors.black,
                     size: AppIcons.md,

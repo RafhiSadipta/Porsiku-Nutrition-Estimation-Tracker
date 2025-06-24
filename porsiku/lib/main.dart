@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:porsiku/view/splash_screen.dart';
 import 'package:porsiku/view/onboarding/landing.dart';
 import 'package:porsiku/view/authentication/login.dart';
@@ -12,20 +13,28 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'PorsiKu',
-      theme: ThemeData(
-        fontFamily: 'Manrope',
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const SplashScreen(),
-      routes: {
-        '/splash': (context) => const SplashScreen(),
-        '/landing': (context) => const LandingPage(),
-        '/login': (context) => const LoginPage(),
-        '/dashboard': (context) => const DashboardPage(),
+    return ScreenUtilInit(
+      // Design size based on your design template (iPhone 14 Pro size)
+      designSize: const Size(393, 852),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'PorsiKu',
+          theme: ThemeData(
+            fontFamily: 'Manrope',
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          ),
+          home: const SplashScreen(),
+          routes: {
+            '/splash': (context) => const SplashScreen(),
+            '/landing': (context) => const LandingPage(),
+            '/login': (context) => const LoginPage(),
+            '/dashboard': (context) => const DashboardPage(),
+          },
+          debugShowCheckedModeBanner: false,
+        );
       },
-      debugShowCheckedModeBanner: false,
     );
   }
 }

@@ -17,20 +17,20 @@ class StepAge extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // Header
           Column(
             children: [
               TitleText(text: 'Berapa usiamu?'),
-              SizedBox(height: AppSpacing.sm),
+              SizedBox(height: AppSpacing.xs),
               SubtitleText(
                 text:
                     'Usia membantu kami menghitung\nkebutuhan kalori yang tepat',
               ),
             ],
           ),
-          SizedBox(height: AppSpacing.xxl),
+          SizedBox(height: AppSpacing.xl),
 
           // Age Display Card
           Container(
@@ -49,7 +49,7 @@ class StepAge extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(height: AppSpacing.sm),
+                SizedBox(height: AppSpacing.xs),
                 Text(
                   '$selectedAge',
                   style: TextStyle(

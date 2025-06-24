@@ -49,7 +49,7 @@ class PeriodSelector extends StatelessWidget {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -59,7 +59,7 @@ class PeriodSelector extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(AppBorderRadius.lg),
                 topRight: Radius.circular(AppBorderRadius.lg),
               ),
@@ -79,7 +79,7 @@ class PeriodSelector extends StatelessWidget {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.md),
+                SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +106,7 @@ class PeriodSelector extends StatelessWidget {
             ),
           ), // Week selector dropdown
           Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -117,7 +117,7 @@ class PeriodSelector extends StatelessWidget {
                     fontWeight: AppTexts.medium,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                SizedBox(height: AppSpacing.md),
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -145,7 +145,7 @@ class PeriodSelector extends StatelessWidget {
                         color: AppColors.textPrimary,
                       ),
                       icon: Container(
-                        margin: const EdgeInsets.only(right: AppSpacing.md),
+                        margin: EdgeInsets.only(right: AppSpacing.md),
                         child: Icon(
                           Icons.keyboard_arrow_down_rounded,
                           color: AppColors.primary,
@@ -161,7 +161,7 @@ class PeriodSelector extends StatelessWidget {
                           value: index,
                           child: Container(
                             constraints: const BoxConstraints(maxHeight: 40),
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                               horizontal: AppSpacing.sm,
                               vertical: 4,
                             ),
@@ -179,7 +179,7 @@ class PeriodSelector extends StatelessWidget {
                                           ? AppColors.primary
                                           : AppColors.textSecondary,
                                 ),
-                                const SizedBox(width: AppSpacing.sm),
+                                SizedBox(width: AppSpacing.sm),
                                 // Compact week details
                                 Flexible(
                                   child: Text(
@@ -210,7 +210,7 @@ class PeriodSelector extends StatelessWidget {
 
                           return Container(
                             constraints: const BoxConstraints(maxHeight: 48),
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                               horizontal: AppSpacing.md,
                               vertical: AppSpacing.sm,
                             ),
@@ -246,7 +246,7 @@ class PeriodSelector extends StatelessWidget {
                                             : AppColors.primary,
                                   ),
                                 ),
-                                const SizedBox(width: AppSpacing.sm),
+                                SizedBox(width: AppSpacing.sm),
                                 Flexible(
                                   child: Text(
                                     isCurrentWeek

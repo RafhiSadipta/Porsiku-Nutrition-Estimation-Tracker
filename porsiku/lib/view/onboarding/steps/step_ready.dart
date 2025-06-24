@@ -14,37 +14,15 @@ class StepReady extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Success Animation/Icon
-          Container(
-            padding: EdgeInsets.all(AppSpacing.xxl),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppBorderRadius.xxl),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.celebration_rounded,
-              size: 80,
-              color: AppColors.primary,
-            ),
-          ),
-          SizedBox(height: AppSpacing.xxl),
-
           // Success Message
           TitleText(text: 'Semuanya Sudah Siap! 🎉'),
-          SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.xs),
 
           SubtitleText(
             text:
                 'Kami telah menyiapkan rencana nutrisi\npersonal yang sesuai dengan tujuanmu',
           ),
-          SizedBox(height: AppSpacing.xxl),
+          SizedBox(height: AppSpacing.xl),
 
           // Summary Card
           Container(
@@ -56,15 +34,6 @@ class StepReady extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Text(
-                  'Yang Akan Kamu Dapatkan:',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: AppSpacing.lg),
-
                 _BenefitItem(
                   icon: Icons.track_changes_rounded,
                   title: 'Tracking Nutrisi Harian',

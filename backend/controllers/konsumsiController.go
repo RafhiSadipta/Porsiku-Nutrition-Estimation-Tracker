@@ -128,7 +128,7 @@ func UpdateSaveKonsumsi(c *gin.Context) {
 	id := c.Param("id")
 	var konsumsi models.Konsumsi
 
-	if err := config.DB.First(&konsumsi, "id = ? AND soft_deleted = ?", id, false).Error; err != nil {
+	if err := config.DB.First(&konsumsi, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Data konsumsi tidak ditemukan"})
 		return
 	}

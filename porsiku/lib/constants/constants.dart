@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AppIcons {
-  static const double xs = 16;
-  static const double sm = 20;
-  static const double md = 24;
-  static const double lg = 30;
-  static const double xl = 48;
+  static double get xs => 16.sp;
+  static double get sm => 20.sp;
+  static double get md => 24.sp;
+  static double get lg => 30.sp;
+  static double get xl => 48.sp;
 }
 
 class AppTexts {
-  // Font Sizes
-  static const double xs = 12;
-  static const double sm = 14;
-  static const double md = 16;
-  static const double ml = 18;
-  static const double lg = 20;
-  static const double xl = 24;
-  static const double xxl = 32;
-  static const double xxxl = 48;
+  // Font Sizes - Using ScreenUtil for responsive text
+  static double get xs => 12.sp;
+  static double get sm => 14.sp;
+  static double get md => 16.sp;
+  static double get ml => 18.sp;
+  static double get lg => 20.sp;
+  static double get xl => 24.sp;
+  static double get xxl => 32.sp;
+  static double get xxxl => 48.sp;
 
   // Font Weights
   static const FontWeight light = FontWeight.w300;
@@ -29,13 +30,13 @@ class AppTexts {
 }
 
 class AppBorderRadius {
-  static const double xs = 4;
-  static const double sm = 8;
-  static const double md = 12;
-  static const double lg = 16;
-  static const double xl = 20;
-  static const double xxl = 24;
-  static const double infinity = 100;
+  static double get xs => 4.r;
+  static double get sm => 8.r;
+  static double get md => 12.r;
+  static double get lg => 16.r;
+  static double get xl => 20.r;
+  static double get xxl => 24.r;
+  static double get infinity => 100.r;
 }
 
 class AppColors {
@@ -170,15 +171,15 @@ class AppShadows {
   ];
 }
 
-// Spacing Constants
+// Spacing Constants - Using ScreenUtil for responsive spacing
 class AppSpacing {
-  static const double xs = 4;
-  static const double sm = 8;
-  static const double md = 16;
-  static const double lg = 24;
-  static const double xl = 32;
-  static const double xxl = 48;
-  static const double xxxl = 64;
+  static double get xs => 4.w;
+  static double get sm => 8.w;
+  static double get md => 16.w;
+  static double get lg => 24.w;
+  static double get xl => 32.w;
+  static double get xxl => 48.w;
+  static double get xxxl => 64.w;
 }
 
 // Animation Constants
@@ -231,129 +232,121 @@ class AppZIndex {
   static const int toast = 10000;
 }
 
-// Button Constants
+// Button Constants - Using ScreenUtil for responsive buttons
 class AppButtons {
-  static const double height = 48;
-  static const double heightSmall = 36;
-  static const double heightLarge = 56;
-  static const EdgeInsets padding = EdgeInsets.symmetric(
-    horizontal: 24,
-    vertical: 12,
-  );
-  static const EdgeInsets paddingSmall = EdgeInsets.symmetric(
-    horizontal: 16,
-    vertical: 8,
-  );
-  static const EdgeInsets paddingLarge = EdgeInsets.symmetric(
-    horizontal: 32,
-    vertical: 16,
-  );
+  static double get height => 48.h;
+  static double get heightSmall => 36.h;
+  static double get heightLarge => 56.h;
+  static EdgeInsets get padding =>
+      EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h);
+  static EdgeInsets get paddingSmall =>
+      EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h);
+  static EdgeInsets get paddingLarge =>
+      EdgeInsets.symmetric(horizontal: 32.w, vertical: 16.h);
 }
 
-// Card Constants
+// Card Constants - Using ScreenUtil for responsive cards
 class AppCards {
-  static const EdgeInsets padding = EdgeInsets.all(16);
-  static const EdgeInsets paddingSmall = EdgeInsets.all(12);
-  static const EdgeInsets paddingLarge = EdgeInsets.all(24);
-  static const double borderWidth = 1;
+  static EdgeInsets get padding => EdgeInsets.all(16.w);
+  static EdgeInsets get paddingSmall => EdgeInsets.all(12.w);
+  static EdgeInsets get paddingLarge => EdgeInsets.all(24.w);
+  static double get borderWidth => 1.w;
 }
 
-// Input Field Constants
+// Input Field Constants - Using ScreenUtil for responsive inputs
 class AppInputs {
-  static const double height = 48;
-  static const EdgeInsets padding = EdgeInsets.symmetric(
-    horizontal: 16,
-    vertical: 12,
-  );
-  static const double borderWidth = 1;
+  static double get height => 48.h;
+  static EdgeInsets get padding =>
+      EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h);
+  static double get borderWidth => 1.w;
 }
 
-// Text Styles - Ready to use text styles
+// Text Styles - Responsive text styles using ScreenUtil
 class AppTextStyles {
   // Headings
-  static const TextStyle h1 = TextStyle(
+  static TextStyle get h1 => TextStyle(
     fontSize: AppTexts.xxxl,
     fontWeight: AppTexts.bold,
     color: AppColors.textPrimary,
   );
 
-  static const TextStyle h2 = TextStyle(
+  static TextStyle get h2 => TextStyle(
     fontSize: AppTexts.xxl,
     fontWeight: AppTexts.bold,
     color: AppColors.textPrimary,
   );
 
-  static const TextStyle h3 = TextStyle(
+  static TextStyle get h3 => TextStyle(
     fontSize: AppTexts.xl,
     fontWeight: AppTexts.semiBold,
     color: AppColors.textPrimary,
   );
 
-  static const TextStyle h4 = TextStyle(
+  static TextStyle get h4 => TextStyle(
     fontSize: AppTexts.lg,
     fontWeight: AppTexts.semiBold,
     color: AppColors.textPrimary,
   );
 
   // Body Text
-  static const TextStyle bodyLarge = TextStyle(
+  static TextStyle get bodyLarge => TextStyle(
     fontSize: AppTexts.md,
     fontWeight: AppTexts.regular,
     color: AppColors.textPrimary,
   );
 
-  static const TextStyle bodyMedium = TextStyle(
+  static TextStyle get bodyMedium => TextStyle(
     fontSize: AppTexts.sm,
     fontWeight: AppTexts.regular,
     color: AppColors.textPrimary,
   );
 
-  static const TextStyle bodySmall = TextStyle(
+  static TextStyle get bodySmall => TextStyle(
     fontSize: AppTexts.xs,
     fontWeight: AppTexts.regular,
     color: AppColors.textSecondary,
   );
 
   // Button Text
-  static const TextStyle buttonLarge = TextStyle(
+  static TextStyle get buttonLarge => TextStyle(
     fontSize: AppTexts.md,
     fontWeight: AppTexts.semiBold,
     color: AppColors.textOnPrimary,
   );
 
-  static const TextStyle buttonMedium = TextStyle(
+  static TextStyle get buttonMedium => TextStyle(
     fontSize: AppTexts.sm,
     fontWeight: AppTexts.medium,
     color: AppColors.textOnPrimary,
   );
 
   // Caption & Labels
-  static const TextStyle caption = TextStyle(
+  static TextStyle get caption => TextStyle(
     fontSize: AppTexts.xs,
     fontWeight: AppTexts.regular,
     color: AppColors.textTertiary,
   );
 
-  static const TextStyle label = TextStyle(
+  static TextStyle get label => TextStyle(
     fontSize: AppTexts.sm,
     fontWeight: AppTexts.medium,
     color: AppColors.textSecondary,
   );
 
   // Special Text Styles
-  static const TextStyle primaryButton = TextStyle(
+  static TextStyle get primaryButton => TextStyle(
     fontSize: AppTexts.md,
     fontWeight: AppTexts.semiBold,
     color: AppColors.white,
   );
 
-  static const TextStyle secondaryButton = TextStyle(
+  static TextStyle get secondaryButton => TextStyle(
     fontSize: AppTexts.md,
     fontWeight: AppTexts.medium,
     color: AppColors.primary,
   );
 
-  static const TextStyle link = TextStyle(
+  static TextStyle get link => TextStyle(
     fontSize: AppTexts.sm,
     fontWeight: AppTexts.medium,
     color: AppColors.primary,

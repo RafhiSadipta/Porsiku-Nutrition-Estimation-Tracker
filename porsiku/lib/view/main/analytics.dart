@@ -306,7 +306,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
                 duration: 1000.ms,
                 curve: Curves.easeInOut,
               ),
-          const SizedBox(height: AppSpacing.lg),
+          SizedBox(height: AppSpacing.lg),
           Text(
                 'Loading Analytics...',
                 style: AppTextStyles.h4.copyWith(
@@ -324,8 +324,8 @@ class _AnalyticsPageState extends State<AnalyticsPage>
   Widget _buildErrorState() {
     return Center(
       child: Container(
-            margin: const EdgeInsets.all(AppSpacing.lg),
-            padding: const EdgeInsets.all(AppSpacing.xl),
+            margin: EdgeInsets.all(AppSpacing.lg),
+            padding: EdgeInsets.all(AppSpacing.xl),
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(AppBorderRadius.lg),
@@ -347,13 +347,13 @@ class _AnalyticsPageState extends State<AnalyticsPage>
                     color: AppColors.error,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                SizedBox(height: AppSpacing.lg),
                 Text(
                   'Unable to Load Analytics',
                   style: AppTextStyles.h4,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                SizedBox(height: AppSpacing.sm),
                 Text(
                   'Please check your connection and try again',
                   style: AppTextStyles.bodyMedium.copyWith(
@@ -361,13 +361,13 @@ class _AnalyticsPageState extends State<AnalyticsPage>
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                SizedBox(height: AppSpacing.lg),
                 ElevatedButton(
                   onPressed: _loadUserData,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white,
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg,
                       vertical: AppSpacing.md,
                     ),
@@ -388,7 +388,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
 
   Widget _buildWeekSummary() {
     return Container(
-      margin: const EdgeInsets.all(AppSpacing.lg),
+      margin: EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -405,7 +405,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
                   .slideX(begin: -0.3, end: 0),
               const Spacer(),
               Container(
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                       vertical: AppSpacing.xs,
                     ),
@@ -428,7 +428,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
                   .scale(begin: const Offset(0.8, 0.8)),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               Expanded(
@@ -441,7 +441,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
                   0,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _buildSummaryCard(
                   'Daily Average',
@@ -454,7 +454,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
@@ -467,7 +467,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
                   2,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _buildSummaryCard(
                   'Carbs',
@@ -478,7 +478,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
                   3,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _buildSummaryCard(
                   'Fat',
@@ -521,7 +521,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
         return Transform.scale(
           scale: animation.value,
           child: Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(AppBorderRadius.lg),
@@ -540,7 +540,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
                   ),
                   child: Icon(icon, color: color, size: 18),
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                SizedBox(height: AppSpacing.sm),
                 Text(
                   title,
                   style: AppTextStyles.bodySmall.copyWith(
@@ -578,7 +578,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
 
   Widget _buildPeriodSelector() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(
+      margin: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.md, // Added consistent top margin
         AppSpacing.lg,
@@ -635,7 +635,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
     ];
 
     return Container(
-      margin: const EdgeInsets.all(AppSpacing.lg),
+      margin: EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -646,7 +646,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
               .animate()
               .fadeIn(duration: 600.ms, delay: 400.ms)
               .slideX(begin: -0.3, end: 0),
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: AppSpacing.sm),
           ...cardsData.asMap().entries.map((entry) {
             final index = entry.key;
             final card = entry.value;

@@ -21,7 +21,7 @@ class StepActivityLevel extends StatelessWidget {
             'Jarang bergerak/olahraga - Pekerjaan duduk, sedikit aktivitas fisik',
         'icon': Icons.self_improvement,
         'value': 'sangat_ringan',
-        'color': AppColors.error,
+        'color': AppColors.primary,
       },
       {
         'label': 'Ringan',
@@ -29,7 +29,7 @@ class StepActivityLevel extends StatelessWidget {
             'Olahraga ringan 1–3x/minggu - Jalan kaki, yoga, atau aktivitas ringan',
         'icon': Icons.directions_walk,
         'value': 'ringan',
-        'color': AppColors.warning,
+        'color': AppColors.primary,
       },
       {
         'label': 'Sedang',
@@ -44,7 +44,7 @@ class StepActivityLevel extends StatelessWidget {
             'Olahraga intens 6–7x/minggu - Latihan kekuatan, HIIT, olahraga kompetitif',
         'icon': Icons.fitness_center,
         'value': 'aktif',
-        'color': AppColors.success,
+        'color': AppColors.primary,
       },
       {
         'label': 'Sangat Aktif',
@@ -52,51 +52,20 @@ class StepActivityLevel extends StatelessWidget {
             'Aktivitas fisik berat/2x olahraga per hari - Atlet atau pekerja fisik berat',
         'icon': Icons.sports_mma,
         'value': 'sangat_aktif',
-        'color': AppColors.success,
+        'color': AppColors.primary,
       },
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          const SizedBox(height: AppSpacing.lg),
-
           // Title and subtitle
           TitleText(text: 'Seberapa aktif kamu?'),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           SubtitleText(text: 'Pilih tingkat aktivitas harianmu'),
-          const SizedBox(height: AppSpacing.xl),
-
-          // Info card
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primary.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: AppColors.primary, size: 20),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    'Tingkat aktivitas membantu menghitung kebutuhan kalori harianmu',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: AppSpacing.xl),
+          SizedBox(height: AppSpacing.xl),
 
           // Activity level options
           ListView.separated(
@@ -115,7 +84,7 @@ class StepActivityLevel extends StatelessWidget {
               );
             },
             separatorBuilder:
-                (context, index) => const SizedBox(height: AppSpacing.md),
+                (context, index) => SizedBox(height: AppSpacing.md),
           ),
         ],
       ),

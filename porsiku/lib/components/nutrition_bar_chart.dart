@@ -64,7 +64,7 @@ class _NutritionBarChartState extends State<NutritionBarChart>
       builder: (context, child) {
         return Container(
           height: 220,
-          padding: const EdgeInsets.all(AppSpacing.sm),
+          padding: EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: AppColors.background.withOpacity(0.5),
             borderRadius: BorderRadius.circular(AppBorderRadius.md),
@@ -154,13 +154,13 @@ class _NutritionBarChartState extends State<NutritionBarChart>
                           dayInWeek.year == now.year;
 
                       return Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.xs),
+                        padding: EdgeInsets.only(top: AppSpacing.xs),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // Day label
                             Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                 horizontal: AppSpacing.xs,
                                 vertical: 2,
                               ),
@@ -261,7 +261,7 @@ class _NutritionBarChartState extends State<NutritionBarChart>
                   tooltipBorderRadius: BorderRadius.circular(
                     AppBorderRadius.sm,
                   ),
-                  tooltipPadding: const EdgeInsets.all(AppSpacing.md),
+                  tooltipPadding: EdgeInsets.all(AppSpacing.md),
                   tooltipMargin: AppSpacing.sm,
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     final originalValue = widget.chartData[groupIndex];

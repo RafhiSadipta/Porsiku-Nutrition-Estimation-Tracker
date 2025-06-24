@@ -41,7 +41,7 @@ class MetricHeader extends StatelessWidget {
           ),
           child: Icon(icon, color: barColor, size: 24),
         ),
-        const SizedBox(width: AppSpacing.md),
+        SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,10 +82,10 @@ class MetricHeader extends StatelessWidget {
                     ),
                   ),
                   if (hasChange) ...[
-                    const SizedBox(width: AppSpacing.sm),
+                    SizedBox(width: AppSpacing.sm),
                     // Change indicator
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm,
                         vertical: 4,
                       ),

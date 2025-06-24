@@ -8,34 +8,12 @@ class StepIntro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      padding: EdgeInsets.all(AppSpacing.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Animated Logo/Icon
-          Container(
-            padding: EdgeInsets.all(AppSpacing.xxl),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppBorderRadius.xxl),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.emoji_food_beverage_rounded,
-              size: 80,
-              color: AppColors.primary,
-            ),
-          ),
-          SizedBox(height: AppSpacing.xxl),
-
           // Welcome Message
-          TitleText(text: 'Selamat Datang di PorsiKu! 🥗'),
+          TitleText(text: 'Selamat Datang di PorsiKu!'),
           SizedBox(height: AppSpacing.md),
 
           SubtitleText(

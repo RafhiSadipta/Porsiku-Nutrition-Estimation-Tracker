@@ -69,33 +69,33 @@ class _OptionState extends State<Option> with SingleTickerProviderStateMixin {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: double.infinity,
-              padding: EdgeInsets.all(AppSpacing.lg),
+              padding: EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color:
                     widget.selected
-                        ? AppColors.primary.withOpacity(0.1)
+                        ? AppColors.primary.withOpacity(0.05)
                         : AppColors.white,
-                borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                borderRadius: BorderRadius.circular(AppBorderRadius.md),
                 border: Border.all(
                   color:
                       widget.selected
                           ? AppColors.primary
                           : AppColors.lightGrey.withOpacity(0.5),
-                  width: widget.selected ? 2 : 1,
+                  width: widget.selected ? 1 : 1,
                 ),
                 boxShadow:
                     widget.selected
                         ? [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.2),
-                            blurRadius: 8,
+                            color: AppColors.primary.withOpacity(0.1),
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ]
                         : [
                           BoxShadow(
-                            color: AppColors.black.withOpacity(0.05),
-                            blurRadius: 4,
+                            color: AppColors.black.withOpacity(0.03),
+                            blurRadius: 3,
                             offset: const Offset(0, 1),
                           ),
                         ],
@@ -106,13 +106,13 @@ class _OptionState extends State<Option> with SingleTickerProviderStateMixin {
                     widget.leadingWidget!
                   else if (widget.icon != null)
                     Container(
-                      padding: EdgeInsets.all(AppSpacing.sm),
+                      padding: EdgeInsets.all(AppSpacing.xs),
                       decoration: BoxDecoration(
                         color:
                             widget.selected
                                 ? AppColors.primary.withOpacity(0.2)
                                 : AppColors.lightGrey.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
                       ),
                       child: Icon(
                         widget.icon!,
@@ -121,11 +121,11 @@ class _OptionState extends State<Option> with SingleTickerProviderStateMixin {
                             (widget.selected
                                 ? AppColors.primary
                                 : AppColors.textSecondary),
-                        size: 20,
+                        size: 18,
                       ),
                     ),
                   if (widget.leadingWidget != null || widget.icon != null)
-                    SizedBox(width: AppSpacing.md),
+                    SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,10 +133,10 @@ class _OptionState extends State<Option> with SingleTickerProviderStateMixin {
                       children: [
                         Text(
                           widget.label,
-                          style: AppTextStyles.bodyLarge.copyWith(
+                          style: AppTextStyles.bodyMedium.copyWith(
                             color:
                                 widget.selected
-                                    ? AppColors.textOnPrimary
+                                    ? AppColors.textPrimary
                                     : AppColors.textPrimary,
                             fontWeight:
                                 widget.selected
@@ -146,7 +146,7 @@ class _OptionState extends State<Option> with SingleTickerProviderStateMixin {
                         ),
                         if (widget.description != null &&
                             widget.description!.isNotEmpty) ...[
-                          SizedBox(height: AppSpacing.xs),
+                          SizedBox(height: AppSpacing.xs / 2),
                           Text(
                             widget.description!,
                             style: AppTextStyles.bodySmall.copyWith(
@@ -154,7 +154,10 @@ class _OptionState extends State<Option> with SingleTickerProviderStateMixin {
                                   widget.selected
                                       ? AppColors.primary.withOpacity(0.8)
                                       : AppColors.grey,
+                              fontSize: 12,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ],
@@ -162,7 +165,7 @@ class _OptionState extends State<Option> with SingleTickerProviderStateMixin {
                   ),
                   if (widget.selected)
                     Container(
-                      padding: EdgeInsets.all(AppSpacing.xs),
+                      padding: EdgeInsets.all(AppSpacing.xs / 2),
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         shape: BoxShape.circle,
@@ -170,7 +173,7 @@ class _OptionState extends State<Option> with SingleTickerProviderStateMixin {
                       child: Icon(
                         Icons.check,
                         color: AppColors.white,
-                        size: 16,
+                        size: 14,
                       ),
                     ),
                 ],

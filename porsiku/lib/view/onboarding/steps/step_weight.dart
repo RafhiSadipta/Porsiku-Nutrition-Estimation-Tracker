@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:porsiku/components/title.dart';
 import 'package:porsiku/constants/constants.dart';
 
@@ -14,22 +15,19 @@ class StepWeight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // Title and subtitle
           TitleText(text: 'Berat badanmu?'),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           SubtitleText(text: 'Masukkan berat badan kamu saat ini (kg)'),
-          const SizedBox(height: AppSpacing.xl),
+          SizedBox(height: AppSpacing.xl),
 
           // Premium card for selected weight display
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
-            ),
+            padding: EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(16),
@@ -41,8 +39,8 @@ class StepWeight extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Icon(Icons.monitor_weight, color: AppColors.primary, size: 32),
-                const SizedBox(height: AppSpacing.sm),
+                Icon(Icons.scale, color: AppColors.primary, size: 32),
+                SizedBox(height: AppSpacing.sm),
                 Text(
                   '$selectedWeight kg',
                   style: AppTextStyles.h2.copyWith(
@@ -50,7 +48,7 @@ class StepWeight extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xs),
+                SizedBox(height: AppSpacing.xs),
                 Text(
                   'Berat badan saat ini',
                   style: AppTextStyles.caption.copyWith(
@@ -61,18 +59,16 @@ class StepWeight extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: AppSpacing.xl),
-
-          // Premium wheel selector
+          SizedBox(height: AppSpacing.xl), // Premium wheel selector
           Container(
-            height: 180,
+            height: 180.h,
             decoration: BoxDecoration(
               color: AppColors.background,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.lightGrey, width: 1),
             ),
             child: ListWheelScrollView.useDelegate(
-              itemExtent: 48,
+              itemExtent: 48.h,
               diameterRatio: 1.2,
               physics: const FixedExtentScrollPhysics(),
               onSelectedItemChanged: onWeightChanged,
@@ -84,7 +80,7 @@ class StepWeight extends StatelessWidget {
                   return Center(
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.md,
                         vertical: AppSpacing.xs,
                       ),
@@ -115,15 +111,33 @@ class StepWeight extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: AppSpacing.lg),
+          SizedBox(height: AppSpacing.lg),
 
           // Helper text
-          Text(
-            'Geser untuk memilih berat badan yang sesuai',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
+          Container(
+            padding: EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(AppBorderRadius.md),
             ),
-            textAlign: TextAlign.center,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Geser untuk memilih berat badan yang sesuai',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

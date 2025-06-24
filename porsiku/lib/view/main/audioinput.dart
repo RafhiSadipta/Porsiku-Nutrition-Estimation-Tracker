@@ -267,7 +267,7 @@ class _AudioInputPageState extends State<AudioInputPage>
         return Container(
               decoration: BoxDecoration(
                 color: AppColors.white,
-                borderRadius: const BorderRadius.vertical(
+                borderRadius: BorderRadius.vertical(
                   top: Radius.circular(AppBorderRadius.xl),
                 ),
                 boxShadow: AppShadows.floating,

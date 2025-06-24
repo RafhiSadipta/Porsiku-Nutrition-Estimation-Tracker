@@ -71,7 +71,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
         widget.nutritionResult.isNotEmpty ? widget.nutritionResult[0] : {};
     foodName = item['nama_makanan'] ?? 'Unknown Product';
 
-    if (widget.isViewMode && widget.existingKonsumsiId != null) {
+    if (widget.isViewMode) {
       // View/Edit mode: gunakan konsumsiId yang sudah ada
       konsumsiId = widget.existingKonsumsiId;
       // Ambil meal type dari data yang ada jika tersedia
@@ -190,7 +190,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                 title: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.sm),
+                      padding: EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(AppBorderRadius.sm),
@@ -201,7 +201,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    SizedBox(width: AppSpacing.md),
                     const Text('Edit Food Name'),
                   ],
                 ),
@@ -229,7 +229,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                             width: 2,
                           ),
                         ),
-                        contentPadding: const EdgeInsets.all(AppSpacing.lg),
+                        contentPadding: EdgeInsets.all(AppSpacing.lg),
                         filled: true,
                         fillColor: AppColors.lightGrey.withOpacity(0.1),
                       ),
@@ -278,7 +278,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircularProgressIndicator(color: AppColors.primary),
-                  const SizedBox(width: AppSpacing.lg),
+                  SizedBox(width: AppSpacing.lg),
                   const Text('Updating food name...'),
                 ],
               ),
@@ -312,7 +312,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
             content: Row(
               children: [
                 Icon(Icons.check_circle_rounded, color: AppColors.white),
-                const SizedBox(width: AppSpacing.sm),
+                SizedBox(width: AppSpacing.sm),
                 const Text('Food name updated successfully'),
               ],
             ),
@@ -345,7 +345,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
             content: Row(
               children: [
                 Icon(Icons.error_rounded, color: AppColors.white),
-                const SizedBox(width: AppSpacing.sm),
+                SizedBox(width: AppSpacing.sm),
                 Text('Failed to update: ${e.toString()}'),
               ],
             ),
@@ -884,6 +884,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
       rethrow;
     }
   }
+
   Future<void> _addIngredient() async {
     final controller = TextEditingController();
     final result = await showDialog<String>(
@@ -897,7 +898,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                 title: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.sm),
+                      padding: EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(AppBorderRadius.sm),
@@ -908,7 +909,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    SizedBox(width: AppSpacing.md),
                     const Text('Add Ingredient'),
                   ],
                 ),
@@ -936,7 +937,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                             width: 2,
                           ),
                         ),
-                        contentPadding: const EdgeInsets.all(AppSpacing.lg),
+                        contentPadding: EdgeInsets.all(AppSpacing.lg),
                         filled: true,
                         fillColor: AppColors.lightGrey.withOpacity(0.1),
                       ),
@@ -970,7 +971,8 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
               .scale(begin: const Offset(0.8, 0.8)),
     );
 
-    if (result != null && result.isNotEmpty) {      // Show loading indicator
+    if (result != null && result.isNotEmpty) {
+      // Show loading indicator
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -984,7 +986,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircularProgressIndicator(color: AppColors.primary),
-                  const SizedBox(width: AppSpacing.lg),
+                  SizedBox(width: AppSpacing.lg),
                   const Text('Adding ingredient...'),
                 ],
               ),
@@ -1033,14 +1035,14 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
             // Update consumption on backend
             if (konsumsiId != null) {
               await _updateConsumptionAfterAddIngredient();
-            }            // Close loading dialog
+            } // Close loading dialog
             if (mounted) Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Row(
                   children: [
                     Icon(Icons.check_circle_rounded, color: AppColors.white),
-                    const SizedBox(width: AppSpacing.sm),
+                    SizedBox(width: AppSpacing.sm),
                     const Text('Ingredient added successfully'),
                   ],
                 ),
@@ -1057,16 +1059,15 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
         } else {
           throw Exception('Failed to add ingredient: ${response.body}');
         }
-      } catch (e) {        // Close loading dialog
+      } catch (e) {
+        // Close loading dialog
         if (mounted) Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 Icon(Icons.error_rounded, color: AppColors.white),
-                const SizedBox(width: AppSpacing.sm),
+                SizedBox(width: AppSpacing.sm),
                 Text('Failed to add ingredient: $e'),
               ],
             ),
@@ -1401,7 +1402,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppBorderRadius.lg),
@@ -1412,7 +1413,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Text(
             'No Image Available',
             style: AppTextStyles.bodyLarge.copyWith(
@@ -1420,7 +1421,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
               fontWeight: AppTexts.medium,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           Text(
             'Photo not available for this meal',
             style: AppTextStyles.bodySmall.copyWith(
@@ -1532,7 +1533,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                 duration: 1200.ms,
                 curve: Curves.easeInOut,
               ),
-          const SizedBox(height: AppSpacing.xl),
+          SizedBox(height: AppSpacing.xl),
           Text(
                 'Analyzing your meal...',
                 style: AppTextStyles.h3.copyWith(
@@ -1542,7 +1543,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
               .animate()
               .fadeIn(duration: 800.ms, delay: 300.ms)
               .slideY(begin: 0.3, end: 0),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Text(
             'Please wait while we process your nutrition data',
             style: AppTextStyles.bodyMedium.copyWith(
@@ -1577,7 +1578,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
           leading: Padding(
             padding: const EdgeInsets.only(left: 16.0),
             child: Container(
-                  margin: const EdgeInsets.all(AppSpacing.sm),
+                  margin: EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: AppColors.white.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(
@@ -1601,7 +1602,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                        margin: const EdgeInsets.all(AppSpacing.sm),
+                        margin: EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
                           color: AppColors.white.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(
@@ -1642,7 +1643,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                       .fadeIn(delay: 300.ms)
                       .scale(begin: const Offset(0.8, 0.8)),
                   Container(
-                        margin: const EdgeInsets.only(
+                        margin: EdgeInsets.only(
                           right: AppSpacing.sm,
                           top: AppSpacing.sm,
                           bottom: AppSpacing.sm,
@@ -1738,7 +1739,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.all(AppSpacing.xs),
+                                padding: EdgeInsets.all(AppSpacing.xs),
                                 decoration: BoxDecoration(
                                   color: AppColors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(
@@ -1762,7 +1763,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                           .animate()
                           .fadeIn(delay: 800.ms, duration: 600.ms)
                           .slideY(begin: 0.3, end: 0),
-                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(height: AppSpacing.sm),
                     ],
                   ),
                 ),
@@ -1774,7 +1775,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
         // Content
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1784,17 +1785,17 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                 // Meal Controls
                 _buildMealControls(),
 
-                const SizedBox(height: AppSpacing.xl),
+                SizedBox(height: AppSpacing.xl),
 
                 // Nutrition Cards
                 _buildNutritionCards(nutrition),
 
-                const SizedBox(height: AppSpacing.xl),
+                SizedBox(height: AppSpacing.xl),
 
                 // Ingredients Section
                 _buildIngredientsSection(ingredients),
 
-                const SizedBox(height: AppSpacing.xl),
+                SizedBox(height: AppSpacing.xl),
 
                 // Add Ingredient Button
                 _buildAddIngredientButton(),
@@ -1809,8 +1810,8 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
   Widget _buildNutritionWarning() {
     return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+          padding: EdgeInsets.all(AppSpacing.lg),
+          margin: EdgeInsets.only(bottom: AppSpacing.lg),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -1830,7 +1831,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
+                padding: EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: AppColors.warning.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(AppBorderRadius.sm),
@@ -1841,7 +1842,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                   size: 20,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1853,7 +1854,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                         color: AppColors.warning,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
+                    SizedBox(height: AppSpacing.xs),
                     Text(
                       'No nutrition information found for this product. Data will be saved with zero nutritional values.',
                       style: AppTextStyles.bodyMedium.copyWith(
@@ -1874,7 +1875,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
 
   Widget _buildMealControls() {
     return Container(
-          padding: const EdgeInsets.all(AppSpacing.md), // Reduced from lg to md
+          padding: EdgeInsets.all(AppSpacing.md), // Reduced from lg to md
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(AppBorderRadius.lg),
@@ -1899,10 +1900,10 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                             fontWeight: AppTexts.medium,
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.sm),
+                        SizedBox(height: AppSpacing.sm),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                             horizontal: AppSpacing.sm,
                             vertical: AppSpacing.xs,
                           ),
@@ -1949,7 +1950,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                       ],
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md), // Quantity Controller
+                  SizedBox(width: AppSpacing.md), // Quantity Controller
                   Expanded(
                     flex: 3,
                     child: Column(
@@ -1962,7 +1963,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                             fontWeight: AppTexts.medium,
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.sm),
+                        SizedBox(height: AppSpacing.sm),
                         Container(
                           decoration: BoxDecoration(
                             color: AppColors.lightGrey.withOpacity(0.3),
@@ -1988,10 +1989,8 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                                       scale:
                                           1.0 + (_scaleController.value * 0.1),
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical:
-                                              AppSpacing
-                                                  .sm, // Reduced from md to sm
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: AppSpacing.sm,
                                         ),
                                         child: Text(
                                           '$quantity',
@@ -2032,7 +2031,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
       child: Row(
         children: [
           Icon(icon, size: 20, color: AppColors.primary),
-          const SizedBox(width: AppSpacing.sm),
+          SizedBox(width: AppSpacing.sm),
           Text(
             value,
             style: AppTextStyles.bodyMedium.copyWith(
@@ -2051,7 +2050,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(AppBorderRadius.md),
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: EdgeInsets.all(AppSpacing.md),
           child: Icon(
             icon,
             color:
@@ -2109,11 +2108,11 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
             .animate()
             .fadeIn(delay: 500.ms, duration: 600.ms)
             .slideX(begin: -0.3, end: 0),
-        const SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.sm),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             crossAxisSpacing: AppSpacing.md,
             mainAxisSpacing: AppSpacing.md,
@@ -2170,7 +2169,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
                     vertical: AppSpacing.xs,
                   ),
@@ -2193,7 +2192,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
             .animate()
             .fadeIn(delay: 600.ms, duration: 600.ms)
             .slideX(begin: -0.3, end: 0),
-        const SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.sm),
         Container(
           decoration: BoxDecoration(
             color: AppColors.white,
@@ -2237,7 +2236,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
               },
               borderRadius: BorderRadius.circular(AppBorderRadius.lg),
               child: Container(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+                padding: EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -2260,7 +2259,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.xs),
+                      padding: EdgeInsets.all(AppSpacing.xs),
                       decoration: BoxDecoration(
                         color: AppColors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(AppBorderRadius.sm),
@@ -2271,7 +2270,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
+                    SizedBox(width: AppSpacing.md),
                     Text(
                       'Add Ingredient',
                       style: AppTextStyles.bodyLarge.copyWith(
@@ -2302,7 +2301,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
             title: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  padding: EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(AppBorderRadius.sm),
@@ -2313,7 +2312,7 @@ class _ResultPageState extends State<ResultPage> with TickerProviderStateMixin {
                     size: 24,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.md),
+                SizedBox(width: AppSpacing.md),
                 const Text('Delete Meal'),
               ],
             ),
@@ -2364,7 +2363,7 @@ class _PremiumNutritionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md), // Reduced from lg to md
+      padding: EdgeInsets.all(AppSpacing.md), // Reduced from lg to md
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [gradient[0].withOpacity(0.1), gradient[1].withOpacity(0.05)],
@@ -2386,16 +2385,14 @@ class _PremiumNutritionCard extends StatelessWidget {
         children: [
           // Icon container
           Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            padding: EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
               gradient: LinearGradient(colors: gradient),
               borderRadius: BorderRadius.circular(AppBorderRadius.sm),
             ),
             child: Icon(icon, color: AppColors.white, size: 20),
           ),
-          const SizedBox(
-            width: AppSpacing.md,
-          ), // Spacing between icon and content
+          SizedBox(width: AppSpacing.md), // Spacing between icon and content
           // Content column (value and label)
           Expanded(
             child: Column(
@@ -2469,9 +2466,7 @@ class _PremiumIngredientTile extends StatelessWidget {
             },
             borderRadius: BorderRadius.circular(AppBorderRadius.lg),
             child: Padding(
-              padding: const EdgeInsets.all(
-                AppSpacing.md,
-              ), // Reduced from lg to md
+              padding: EdgeInsets.all(AppSpacing.md), // Reduced from lg to md
               child: Row(
                 children: [
                   Container(
@@ -2498,7 +2493,7 @@ class _PremiumIngredientTile extends StatelessWidget {
                       size: 18, // Reduced from 20 to 18
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
+                  SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2510,11 +2505,11 @@ class _PremiumIngredientTile extends StatelessWidget {
                             fontWeight: AppTexts.semiBold,
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.xs),
+                        SizedBox(height: AppSpacing.xs),
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                 horizontal: AppSpacing.sm,
                                 vertical: 2,
                               ),
@@ -2532,7 +2527,7 @@ class _PremiumIngredientTile extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: AppSpacing.sm),
+                            SizedBox(width: AppSpacing.sm),
                             Text(
                               quantity,
                               style: AppTextStyles.caption.copyWith(
@@ -2544,7 +2539,7 @@ class _PremiumIngredientTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
+                  SizedBox(width: AppSpacing.md),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -2554,7 +2549,7 @@ class _PremiumIngredientTile extends StatelessWidget {
                       },
                       borderRadius: BorderRadius.circular(AppBorderRadius.sm),
                       child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        padding: EdgeInsets.all(AppSpacing.sm),
                         child: Icon(
                           Icons.close_rounded,
                           color: AppColors.error,

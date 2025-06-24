@@ -75,7 +75,7 @@ class AnalyticsCard extends StatelessWidget {
         children: [
           // Header with gradient background
           Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -85,7 +85,7 @@ class AnalyticsCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(AppBorderRadius.lg),
                 topRight: Radius.circular(AppBorderRadius.lg),
               ),
@@ -102,7 +102,7 @@ class AnalyticsCard extends StatelessWidget {
 
           // Chart section
           Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: EdgeInsets.all(AppSpacing.lg),
             child: Column(
               children: [
                 NutritionBarChart(
@@ -112,7 +112,7 @@ class AnalyticsCard extends StatelessWidget {
                   gradientColors: gradientColors,
                   unit: unit,
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                SizedBox(height: AppSpacing.lg),
                 WeeklySummary(
                   barColor: barColor,
                   unit: unit,

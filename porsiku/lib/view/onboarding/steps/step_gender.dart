@@ -18,13 +18,13 @@ class StepGender extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // Header
           Column(
             children: [
               TitleText(text: 'Apa jenis kelaminmu?'),
-              SizedBox(height: AppSpacing.sm),
+              SizedBox(height: AppSpacing.xs),
               SubtitleText(
                 text:
                     'Informasi ini membantu kami menghitung\nkebutuhan kalori yang lebih akurat',
@@ -42,7 +42,7 @@ class StepGender extends StatelessWidget {
             onTap: () => onGenderSelected('male'),
             iconColor: Colors.blue,
           ),
-          SizedBox(height: AppSpacing.lg),
+          SizedBox(height: AppSpacing.md),
 
           Option(
             icon: Icons.female_rounded,

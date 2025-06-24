@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:porsiku/view/authentication/signup.dart';
+import 'package:porsiku/components/progressbar.dart';
 import 'steps/step_intro.dart';
 import 'steps/step_gender.dart';
 import 'steps/step_age.dart';
@@ -193,44 +195,28 @@ class _OnboardingFormPageState extends State<OnboardingFormPage>
       body: SafeArea(
         child: Column(
           children: [
-            // Enhanced Header with Progress
+            //  Header with Progress
             Container(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
+              height: 80.h,
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              decoration: BoxDecoration(color: AppColors.background),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      if (step > 0) ...[
-                        _EnhancedBackButton(onPressed: prevStep),
-                        SizedBox(width: AppSpacing.md),
-                      ],
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Langkah ${step + 1} dari 10',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.grey,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(height: AppSpacing.xs),
-                            _EnhancedProgressBar(step: step, totalSteps: 10),
-                          ],
-                        ),
-                      ),
-                    ],
+                  // Progress bar in center
+                  Expanded(
+                    child: ProgressBarOnboarding(step: step, totalStep: 10),
+                  ),
+
+                  SizedBox(width: AppSpacing.md),
+
+                  // Step indicator
+                  Text(
+                    '${step + 1}/10',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -250,9 +236,7 @@ class _OnboardingFormPageState extends State<OnboardingFormPage>
                   );
                 },
               ),
-            ),
-
-            // Enhanced Bottom Action
+            ), //  Bottom Action
             Container(
               padding: EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
@@ -267,30 +251,43 @@ class _OnboardingFormPageState extends State<OnboardingFormPage>
               ),
               child: SafeArea(
                 top: false,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: double.infinity,
-                  child: Button(
-                    text: step == 9 ? "Mulai Perjalanan" : 'Lanjutkan',
-                    variant: ButtonVariant.primary,
-                    isActive: step == 9 ? true : _isStepValid(),
-                    onPressed:
-                        step == 9
-                            ? submitOnboardingData
-                            : (_isStepValid() ? nextStep : null),
-                    icon:
-                        step == 9
-                            ? Icon(
-                              Icons.rocket_launch_rounded,
-                              size: 18,
-                              color: AppColors.white,
-                            )
-                            : Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: AppColors.white,
-                            ),
-                  ),
+                child: Row(
+                  children: [
+                    // Back button (1/4 of the width)
+                    if (step > 0) ...[
+                      Expanded(
+                        flex: 1,
+                        child: _BackButtonBottom(onPressed: prevStep),
+                      ),
+                      SizedBox(width: AppSpacing.md),
+                    ],
+
+                    // Continue button (3/4 of the width)
+                    Expanded(
+                      flex: step > 0 ? 3 : 1,
+                      child: Button(
+                        text: step == 9 ? "Mulai Perjalanan" : 'Lanjutkan',
+                        variant: ButtonVariant.primary,
+                        isActive: step == 9 ? true : _isStepValid(),
+                        onPressed:
+                            step == 9
+                                ? submitOnboardingData
+                                : (_isStepValid() ? nextStep : null),
+                        icon:
+                            step == 9
+                                ? Icon(
+                                  Icons.rocket_launch_rounded,
+                                  size: 18,
+                                  color: AppColors.white,
+                                )
+                                : Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 18,
+                                  color: AppColors.white,
+                                ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -301,17 +298,17 @@ class _OnboardingFormPageState extends State<OnboardingFormPage>
   }
 }
 
-// Enhanced Components for Premium UI/UX
-class _EnhancedBackButton extends StatefulWidget {
+//  Components for Premium UI/UX
+class _BackButtonBottom extends StatefulWidget {
   final VoidCallback? onPressed;
 
-  const _EnhancedBackButton({required this.onPressed});
+  const _BackButtonBottom({required this.onPressed});
 
   @override
-  State<_EnhancedBackButton> createState() => _EnhancedBackButtonState();
+  State<_BackButtonBottom> createState() => _BackButtonBottomState();
 }
 
-class _EnhancedBackButtonState extends State<_EnhancedBackButton>
+class _BackButtonBottomState extends State<_BackButtonBottom>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -323,7 +320,7 @@ class _EnhancedBackButtonState extends State<_EnhancedBackButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
@@ -342,18 +339,14 @@ class _EnhancedBackButtonState extends State<_EnhancedBackButton>
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: Container(
-            width: 40,
-            height: 40,
+            height: 56.h,
             decoration: BoxDecoration(
               color: AppColors.white,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.lightGrey.withOpacity(0.3),
-                width: 1,
-              ),
+              borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+              border: Border.all(color: AppColors.primary, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withOpacity(0.08),
+                  color: AppColors.primary.withOpacity(0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -362,7 +355,7 @@ class _EnhancedBackButtonState extends State<_EnhancedBackButton>
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                customBorder: const CircleBorder(),
+                borderRadius: BorderRadius.circular(AppBorderRadius.lg),
                 onTap: () {
                   HapticFeedback.lightImpact();
                   widget.onPressed?.call();
@@ -370,10 +363,15 @@ class _EnhancedBackButtonState extends State<_EnhancedBackButton>
                 onTapDown: (_) => _animationController.forward(),
                 onTapUp: (_) => _animationController.reverse(),
                 onTapCancel: () => _animationController.reverse(),
-                child: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 18,
-                  color: AppColors.textPrimary,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.arrow_back_rounded,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -381,98 +379,5 @@ class _EnhancedBackButtonState extends State<_EnhancedBackButton>
         );
       },
     );
-  }
-}
-
-class _EnhancedProgressBar extends StatelessWidget {
-  final int step;
-  final int totalSteps;
-
-  const _EnhancedProgressBar({required this.step, required this.totalSteps});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              _getStepTitle(step),
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              '${((step + 1) / totalSteps * 100).round()}%',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: AppSpacing.sm),
-        TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0, end: (step + 1) / totalSteps),
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return Container(
-              height: 6,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppBorderRadius.sm),
-                color: AppColors.lightGrey.withOpacity(0.3),
-              ),
-              child: Stack(
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * value,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppBorderRadius.sm),
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.8),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  String _getStepTitle(int step) {
-    switch (step) {
-      case 0:
-        return 'Selamat Datang';
-      case 1:
-        return 'Tujuan Anda';
-      case 2:
-        return 'Jenis Kelamin';
-      case 3:
-        return 'Usia';
-      case 4:
-        return 'Tinggi Badan';
-      case 5:
-        return 'Berat Badan';
-      case 6:
-        return 'Target Berat';
-      case 7:
-        return 'Kecepatan Target';
-      case 8:
-        return 'Aktivitas Harian';
-      case 9:
-        return 'Siap Dimulai';
-      default:
-        return 'Langkah ${step + 1}';
-    }
   }
 }

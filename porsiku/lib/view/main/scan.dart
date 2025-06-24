@@ -331,7 +331,7 @@ class _ScanPageState extends State<ScanPage> with TickerProviderStateMixin {
         content: Row(
           children: [
             Icon(icon, color: AppColors.white),
-            const SizedBox(width: AppSpacing.sm),
+            SizedBox(width: AppSpacing.sm),
             Expanded(child: Text(message)),
           ],
         ),

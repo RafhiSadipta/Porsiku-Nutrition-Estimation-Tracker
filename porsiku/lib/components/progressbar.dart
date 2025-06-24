@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:porsiku/constants/constants.dart';
 
 class ProgressBarOnboarding extends StatelessWidget {
@@ -22,8 +23,8 @@ class ProgressBarOnboarding extends StatelessWidget {
           child: LinearProgressIndicator(
             value: value,
             backgroundColor: AppColors.lightGrey,
-            color: AppColors.black,
-            minHeight: 12.0,
+            color: AppColors.primary,
+            minHeight: 12.h,
           ),
         );
       },

@@ -321,7 +321,7 @@ class _SectionCardState extends State<SectionCard>
       right: 0,
       child: Container(
         height: 4,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: AppGradients.primary,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(AppBorderRadius.lg),

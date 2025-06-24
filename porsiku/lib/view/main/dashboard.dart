@@ -356,7 +356,9 @@ class _DashboardPageState extends State<DashboardPage>
         isLoadingRecipes = false;
       });
     }
-  }  void _onItemTapped(int index) {
+  }
+
+  void _onItemTapped(int index) {
     // If the 'Add' button is tapped, show the dialog
     if (index == 2) {
       _showAddOptionsDialog(context);
@@ -1538,12 +1540,12 @@ class _DashboardPageState extends State<DashboardPage>
     Color gradientStart;
     Color gradientEnd;
 
-    if (hour < 12) {
+    if (hour >= 4 && hour < 12) {
       greeting = 'Good Morning';
       greetingIcon = Icons.wb_sunny;
       gradientStart = const Color(0xFFFFD54F);
       gradientEnd = AppColors.primary;
-    } else if (hour < 17) {
+    } else if (hour >= 12 && hour < 17) {
       greeting = 'Good Afternoon';
       greetingIcon = Icons.wb_sunny_outlined;
       gradientStart = AppColors.primary;

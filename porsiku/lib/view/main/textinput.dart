@@ -95,7 +95,7 @@ class _TextInputPageState extends State<TextInputPage>
           content: Row(
             children: [
               Icon(Icons.warning_rounded, color: AppColors.white),
-              const SizedBox(width: AppSpacing.sm),
+              SizedBox(width: AppSpacing.sm),
               const Text('Please enter some food items'),
             ],
           ),
@@ -149,7 +149,7 @@ class _TextInputPageState extends State<TextInputPage>
               content: Row(
                 children: [
                   Icon(Icons.search_off_rounded, color: AppColors.white),
-                  const SizedBox(width: AppSpacing.sm),
+                  SizedBox(width: AppSpacing.sm),
                   const Text('No food items detected'),
                 ],
               ),
@@ -185,7 +185,7 @@ class _TextInputPageState extends State<TextInputPage>
           content: Row(
             children: [
               Icon(Icons.error_rounded, color: AppColors.white),
-              const SizedBox(width: AppSpacing.sm),
+              SizedBox(width: AppSpacing.sm),
               Expanded(child: Text('Failed to estimate nutrition: $e')),
             ],
           ),
@@ -209,7 +209,7 @@ class _TextInputPageState extends State<TextInputPage>
         return Container(
               decoration: BoxDecoration(
                 color: AppColors.white,
-                borderRadius: const BorderRadius.vertical(
+                borderRadius: BorderRadius.vertical(
                   top: Radius.circular(AppBorderRadius.xl),
                 ),
                 boxShadow: AppShadows.floating,

@@ -21,7 +21,7 @@ class WeeklySummary extends StatelessWidget {
     final daysWithData = chartData.where((value) => value > 0).length;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [barColor.withOpacity(0.08), barColor.withOpacity(0.03)],
@@ -50,7 +50,7 @@ class WeeklySummary extends StatelessWidget {
                   size: 16,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              SizedBox(width: AppSpacing.sm),
               Text(
                 'Week Summary',
                 style: AppTextStyles.bodyMedium.copyWith(
@@ -60,7 +60,7 @@ class WeeklySummary extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           // Statistics
           Row(
             children: [
@@ -75,7 +75,7 @@ class WeeklySummary extends StatelessWidget {
                   Icons.trending_up_rounded,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _buildStatItem(
                   'Weekly Total',
@@ -89,7 +89,7 @@ class WeeklySummary extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
@@ -103,7 +103,7 @@ class WeeklySummary extends StatelessWidget {
                   Icons.arrow_upward_rounded,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _buildStatItem(
                   'Active Days',

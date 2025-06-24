@@ -14,13 +14,13 @@ class StepGoal extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // Header Section
           Column(
             children: [
               TitleText(text: 'Apa tujuan utamamu?'),
-              SizedBox(height: AppSpacing.sm),
+              SizedBox(height: AppSpacing.xs),
               SubtitleText(
                 text:
                     'Pilih tujuan yang paling sesuai dengan\nkeinginanmu saat ini',
@@ -38,7 +38,7 @@ class StepGoal extends StatelessWidget {
             onTap: () => onGoalSelected('cutting'),
             iconColor: Colors.red,
           ),
-          SizedBox(height: AppSpacing.lg),
+          SizedBox(height: AppSpacing.md),
 
           Option(
             icon: Icons.trending_up_rounded,
@@ -48,7 +48,7 @@ class StepGoal extends StatelessWidget {
             onTap: () => onGoalSelected('bulking'),
             iconColor: Colors.green,
           ),
-          SizedBox(height: AppSpacing.lg),
+          SizedBox(height: AppSpacing.md),
 
           Option(
             icon: Icons.balance_rounded,
