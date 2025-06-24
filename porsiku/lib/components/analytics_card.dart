@@ -22,12 +22,13 @@ class AnalyticsCard extends StatelessWidget {
     required this.icon,
     required this.chartData,
     required this.weekDates,
-  });  @override
+  });
+  @override
   Widget build(BuildContext context) {
     // Find the most recent non-zero value as current
     double currentValue = 0.0;
     double previousValue = 0.0;
-    
+
     // Find current value (most recent non-zero or last value)
     for (int i = chartData.length - 1; i >= 0; i--) {
       if (chartData[i] > 0) {
@@ -35,21 +36,23 @@ class AnalyticsCard extends StatelessWidget {
         break;
       }
     }
-    
+
     // If all values are 0, use the last value
     if (currentValue == 0) {
       currentValue = chartData.last;
     }
-    
+
     // Find previous value (previous non-zero value before current)
-    int currentIndex = chartData.lastIndexWhere((value) => value == currentValue);
+    int currentIndex = chartData.lastIndexWhere(
+      (value) => value == currentValue,
+    );
     for (int i = currentIndex - 1; i >= 0; i--) {
       if (chartData[i] > 0) {
         previousValue = chartData[i];
         break;
       }
     }
-    
+
     // Calculate change percent with proper handling
     double changePercent = 0.0;
     if (previousValue > 0 && !previousValue.isNaN && !currentValue.isNaN) {
@@ -61,44 +64,63 @@ class AnalyticsCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+        boxShadow: AppShadows.lgCard,
+        border: Border.all(color: barColor.withOpacity(0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          MetricHeader(
-            title: title,
-            unit: unit,
-            barColor: barColor,
-            icon: icon,
-            currentValue: currentValue,
-            changePercent: changePercent,
+          // Header with gradient background
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  barColor.withOpacity(0.05),
+                  gradientColors.first.withOpacity(0.02),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppBorderRadius.lg),
+                topRight: Radius.circular(AppBorderRadius.lg),
+              ),
+            ),
+            child: MetricHeader(
+              title: title,
+              unit: unit,
+              barColor: barColor,
+              icon: icon,
+              currentValue: currentValue,
+              changePercent: changePercent,
+            ),
           ),
-          const SizedBox(height: 20),
 
-          // Chart
-          NutritionBarChart(
-            chartData: chartData,
-            weekDates: weekDates,
-            barColor: barColor,
-            gradientColors: gradientColors,
-            unit: unit,
+          // Chart section
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              children: [
+                NutritionBarChart(
+                  chartData: chartData,
+                  weekDates: weekDates,
+                  barColor: barColor,
+                  gradientColors: gradientColors,
+                  unit: unit,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                WeeklySummary(
+                  barColor: barColor,
+                  unit: unit,
+                  chartData: chartData,
+                ),
+              ],
+            ),
           ),
-
-          // Weekly Summary
-          const SizedBox(height: 16),
-          WeeklySummary(barColor: barColor, unit: unit, chartData: chartData),
         ],
       ),
     );

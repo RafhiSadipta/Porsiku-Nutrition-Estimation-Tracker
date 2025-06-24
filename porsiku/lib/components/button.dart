@@ -28,82 +28,76 @@ class Button extends StatelessWidget {
     this.customBackgroundColor,
     this.customTextColor,
   });
-
   @override
   Widget build(BuildContext context) {
     Color bgColor;
     Color textColor;
     BorderSide? borderSide;
+    List<BoxShadow>? boxShadow;
 
     switch (variant) {
       case ButtonVariant.secondary:
         bgColor = customBackgroundColor ?? AppColors.white;
-        textColor = customTextColor ?? AppColors.black;
+        textColor = customTextColor ?? AppColors.primary;
         borderSide = BorderSide(
-          color: isActive ? AppColors.lightGrey : AppColors.grey,
+          color: isActive ? AppColors.primary.withOpacity(0.3) : AppColors.grey,
+          width: 1.5,
         );
+        boxShadow = AppShadows.card;
         break;
       case ButtonVariant.primary:
-        bgColor = customBackgroundColor ?? AppColors.black;
+        bgColor = customBackgroundColor ?? AppColors.primary;
         textColor = customTextColor ?? AppColors.white;
         borderSide = null;
+        boxShadow = AppShadows.primaryButton;
         break;
     }
 
-    final Color effectiveBgColor = isActive ? bgColor : Colors.grey.shade300;
+    final Color effectiveBgColor = isActive ? bgColor : AppColors.lightGrey;
     final Color effectiveTextColor =
-        isActive ? textColor : Colors.grey.shade500;
-
+        isActive ? textColor : AppColors.textTertiary;
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: effectiveBgColor,
-          padding: padding ?? const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-          side: borderSide,
-          elevation:
-              AppElevations
-                  .sm, // Default elevation, bisa disesuaikan per variant jika perlu
-          shadowColor: AppShadows.card.first.color.withOpacity(
-            0.5,
-          ), // Ambil dari AppShadows
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          boxShadow: isActive ? boxShadow : null,
         ),
-        onPressed: isActive ? onPressed : null,
-        child:
-            icon == null
-                ? Text(
-                  text,
-                  style: (textStyle ??
-                          TextStyle(
-                            fontSize: AppTexts.md,
-                            fontWeight: FontWeight.bold,
-                            fontFamily:
-                                'Manrope', // Pastikan font family konsisten
-                          ))
-                      .copyWith(color: effectiveTextColor),
-                )
-                : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    icon!,
-                    const SizedBox(width: 8),
-                    Text(
-                      text,
-                      style: (textStyle ??
-                              TextStyle(
-                                fontSize: AppTexts.md,
-                                fontWeight: FontWeight.bold,
-                                fontFamily:
-                                    'Manrope', // Pastikan font family konsisten
-                              ))
-                          .copyWith(color: effectiveTextColor),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: effectiveBgColor,
+            padding: padding ?? EdgeInsets.symmetric(vertical: AppSpacing.md),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
+            side: borderSide,
+            elevation:
+                0, // Remove default elevation as we're using custom shadows
+            shadowColor: Colors.transparent,
+          ),
+          onPressed: isActive ? onPressed : null,
+          child:
+              icon == null
+                  ? Text(
+                    text,
+                    style: (textStyle ?? AppTextStyles.buttonLarge).copyWith(
+                      color: effectiveTextColor,
                     ),
-                  ],
-                ),
+                  )
+                  : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      icon!,
+                      SizedBox(width: AppSpacing.sm),
+                      Text(
+                        text,
+                        style: (textStyle ?? AppTextStyles.buttonLarge)
+                            .copyWith(color: effectiveTextColor),
+                      ),
+                    ],
+                  ),
+        ),
       ),
     );
   }

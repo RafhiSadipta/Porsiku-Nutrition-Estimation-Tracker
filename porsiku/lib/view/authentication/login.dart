@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:porsiku/components/title.dart';
 import 'package:porsiku/constants/constants.dart';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:porsiku/services/auth_service.dart';
 
 import 'signup.dart';
 import 'package:porsiku/components/input_field.dart';
@@ -46,7 +46,6 @@ class _LoginPageState extends State<LoginPage> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data['token']?.toString() ?? '';
@@ -64,16 +63,16 @@ class _LoginPageState extends State<LoginPage> {
           return;
         }
 
-        // Simpan token dan user_id ke SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token);
-        await prefs.setString('user_id', userId); // pastikan key: user_id
+        // Save user session using AuthService
+        await AuthService.saveUserSession(
+          token: token,
+          userId: userId,
+          userEmail: email, // Save email for future reference
+        );
 
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text("Login berhasil!")));
-
-        // TODO: Simpan token ke SharedPreferences
 
         // Navigasi ke halaman utama setelah login berhasil
         Navigator.pushReplacement(
@@ -116,89 +115,181 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 80),
-                  const TitleText(text: 'Log In'),
-                  const SizedBox(height: 8),
+                  SizedBox(height: AppSpacing.xxl * 2),
+                  // Welcome Section
+                  const TitleText(text: 'Selamat Datang Kembali'),
+                  SizedBox(height: AppSpacing.sm),
                   const SubtitleText(
                     text:
-                        'Masuk untuk melanjutkan perjalananmu\nbersama PorsiKu.',
+                        'Masuk untuk melanjutkan perjalanan\nnutrisi sehatmu dengan PorsiKu',
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: AppSpacing.xxl),
 
-                  // Email InputField with controller
-                  InputField(
-                    controller: emailController,
-                    hintText: 'Email',
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Password InputField with controller
-                  InputField(
-                    controller: passwordController,
-                    hintText: 'Password',
-                    isPassword: true,
-                  ),
-                  const SizedBox(height: 8),
-
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () {
-                        // TODO: Navigate to forget password
-                      },
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                      child: const Text(
-                        'Lupa password?',
-                        style: TextStyle(
-                          color: AppColors.grey,
-                          decoration: TextDecoration.underline,
-                          fontSize: AppTexts.md,
+                  // Login Form Card
+                  Container(
+                    padding: EdgeInsets.all(AppSpacing.xl),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                      boxShadow: AppShadows.card,
+                    ),
+                    child: Column(
+                      children: [
+                        // Email Field
+                        InputField(
+                          controller: emailController,
+                          hintText: 'Masukkan email',
+                          labelText: 'Email',
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          prefixIcon: Icon(
+                            Icons.email_outlined,
+                            color: AppColors.grey,
+                            size: 20,
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                        SizedBox(height: AppSpacing.md),
 
-                  SizedBox(
-                    width: double.infinity,
-                    child: Button(
-                      // Replaced PrimaryButton
-                      text: isLoading ? 'Loading...' : 'Log In',
-                      variant: ButtonVariant.primary, // Added variant
-                      onPressed: isLoading ? null : login,
-                      isActive: !isLoading, // Added isActive based on isLoading
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const SignupPage(),
+                        // Password Field
+                        InputField(
+                          controller: passwordController,
+                          hintText: 'Masukkan password',
+                          labelText: 'Password',
+                          isPassword: true,
+                          textInputAction: TextInputAction.done,
+                          prefixIcon: Icon(
+                            Icons.lock_outline,
+                            color: AppColors.grey,
+                            size: 20,
+                          ),
+                          onSubmitted: (_) => !isLoading ? login() : null,
                         ),
-                      );
-                    },
-                    child: const Text(
-                      "Belum punya akun? Daftar",
-                      style: TextStyle(
-                        color: AppColors.grey,
-                        decoration: TextDecoration.underline,
-                        fontSize: AppTexts.md,
-                      ),
+                        SizedBox(height: AppSpacing.sm),
+
+                        // Forgot Password
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              // TODO: Navigate to forget password
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Fitur lupa password akan segera hadir!',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.white,
+                                    ),
+                                  ),
+                                  backgroundColor: AppColors.primary,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.md,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                              ),
+                            ),
+                            child: Text(
+                              'Lupa password?',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: AppSpacing.lg),
+
+                        // Login Button
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: double.infinity,
+                          child: Button(
+                            text: isLoading ? 'Masuk...' : 'Masuk',
+                            variant: ButtonVariant.primary,
+                            onPressed: isLoading ? null : login,
+                            isActive: !isLoading,
+                            icon:
+                                isLoading
+                                    ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              AppColors.white,
+                                            ),
+                                      ),
+                                    )
+                                    : Icon(
+                                      Icons.login_rounded,
+                                      size: 18,
+                                      color: AppColors.white,
+                                    ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: AppSpacing.xl),
+
+                  // Sign Up Link
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                      border: Border.all(color: AppColors.lightGrey, width: 1),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Belum punya akun? ",
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.grey,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const SignupPage(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            "Daftar Sekarang",
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.xxl),
                 ],
               ),
             ),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:porsiku/components/title.dart';
-import 'package:porsiku/components/option.dart'; // Import Option
+import 'package:porsiku/components/option.dart';
+import 'package:porsiku/constants/constants.dart';
 
 class StepGender extends StatelessWidget {
   final String? selectedGender;
   final ValueChanged<String> onGenderSelected;
+
   const StepGender({
     super.key,
     this.selectedGender,
@@ -14,30 +16,41 @@ class StepGender extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          TitleText(text: 'Apa jenis kelaminmu?'),
-          const SizedBox(height: 4),
-          SubtitleText(
-            text: 'Pilih jenis kelamin yang sesuai dengan identitasmu',
+          // Header
+          Column(
+            children: [
+              TitleText(text: 'Apa jenis kelaminmu?'),
+              SizedBox(height: AppSpacing.sm),
+              SubtitleText(
+                text:
+                    'Informasi ini membantu kami menghitung\nkebutuhan kalori yang lebih akurat',
+              ),
+            ],
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
+
+          // Gender Options
           Option(
-            // Use Option
-            icon: Icons.male,
+            icon: Icons.male_rounded,
             label: 'Laki-laki',
-            selected: selectedGender == 'L',
-            onTap: () => onGenderSelected('L'),
+            description: 'Kebutuhan kalori umumnya lebih tinggi',
+            selected: selectedGender == 'male',
+            onTap: () => onGenderSelected('male'),
+            iconColor: Colors.blue,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
+
           Option(
-            // Use Option
-            icon: Icons.female,
+            icon: Icons.female_rounded,
             label: 'Perempuan',
-            selected: selectedGender == 'P',
-            onTap: () => onGenderSelected('P'),
+            description: 'Kebutuhan kalori disesuaikan dengan metabolisme',
+            selected: selectedGender == 'female',
+            onTap: () => onGenderSelected('female'),
+            iconColor: Colors.pink,
           ),
         ],
       ),

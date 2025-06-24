@@ -22,73 +22,125 @@ class MetricHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPositive = changePercent >= 0;
+    final hasChange = changePercent != 0;
 
     return Row(
       children: [
+        // Icon container with enhanced design
         Container(
-          padding: const EdgeInsets.all(8),
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
-            color: barColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            gradient: LinearGradient(
+              colors: [barColor.withOpacity(0.15), barColor.withOpacity(0.05)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(AppBorderRadius.md),
+            border: Border.all(color: barColor.withOpacity(0.2), width: 1),
           ),
-          child: Icon(icon, color: barColor, size: 20),
+          child: Icon(icon, color: barColor, size: 24),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Title
               Text(
                 title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: AppColors.black,
+                style: AppTextStyles.h4.copyWith(
+                  fontWeight: AppTexts.semiBold,
+                  color: AppColors.textPrimary,
                 ),
               ),
+              const SizedBox(height: 4),
+              // Value and change indicator
               Row(
                 children: [
-                  Text(
-                    '${currentValue.toInt()} $unit',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                      color: barColor,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          isPositive
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  // Current value
+                  RichText(
+                    text: TextSpan(
                       children: [
-                        Icon(
-                          isPositive ? Icons.trending_up : Icons.trending_down,
-                          size: 12,
-                          color: isPositive ? Colors.green : Colors.red,
+                        TextSpan(
+                          text: currentValue.toStringAsFixed(
+                            currentValue == currentValue.toInt() ? 0 : 1,
+                          ),
+                          style: AppTextStyles.h2.copyWith(
+                            fontWeight: AppTexts.bold,
+                            color: barColor,
+                          ),
                         ),
-                        const SizedBox(width: 2),
-                        Text(
-                          '${changePercent.abs().toStringAsFixed(1)}%',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: isPositive ? Colors.green : Colors.red,
+                        TextSpan(
+                          text: ' $unit',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: AppTexts.medium,
                           ),
                         ),
                       ],
                     ),
                   ),
+                  if (hasChange) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    // Change indicator
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            isPositive
+                                ? AppColors.success.withOpacity(0.15)
+                                : AppColors.error.withOpacity(0.15),
+                            isPositive
+                                ? AppColors.success.withOpacity(0.05)
+                                : AppColors.error.withOpacity(0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          AppBorderRadius.infinity,
+                        ),
+                        border: Border.all(
+                          color:
+                              isPositive
+                                  ? AppColors.success.withOpacity(0.3)
+                                  : AppColors.error.withOpacity(0.3),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isPositive
+                                ? Icons.trending_up_rounded
+                                : Icons.trending_down_rounded,
+                            size: 14,
+                            color:
+                                isPositive
+                                    ? AppColors.success
+                                    : AppColors.error,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${changePercent.abs().toStringAsFixed(1)}%',
+                            style: AppTextStyles.caption.copyWith(
+                              fontWeight: AppTexts.semiBold,
+                              color:
+                                  isPositive
+                                      ? AppColors.success
+                                      : AppColors.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],

@@ -3,36 +3,42 @@ import 'package:porsiku/constants/constants.dart';
 
 class TitleText extends StatelessWidget {
   final String text;
-  const TitleText({super.key, required this.text});
+  final TextAlign? textAlign;
+  final Color? color;
+
+  const TitleText({super.key, required this.text, this.textAlign, this.color});
 
   @override
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(
-        fontSize: AppTexts.xl,
-        fontWeight: FontWeight.bold,
-        color: AppColors.black,
-      ),
-      textAlign: TextAlign.center,
+      style: AppTextStyles.h3.copyWith(color: color ?? AppColors.textPrimary),
+      textAlign: textAlign ?? TextAlign.center,
     );
   }
 }
 
 class SubtitleText extends StatelessWidget {
   final String text;
-  const SubtitleText({super.key, required this.text});
+  final TextAlign? textAlign;
+  final Color? color;
+
+  const SubtitleText({
+    super.key,
+    required this.text,
+    this.textAlign,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(
-        fontSize: AppTexts.md,
-        fontWeight: FontWeight.w500,
-        color: AppColors.grey,
+      style: AppTextStyles.bodyMedium.copyWith(
+        color: color ?? AppColors.grey,
+        height: 1.4,
       ),
-      textAlign: TextAlign.center,
+      textAlign: textAlign ?? TextAlign.center,
     );
   }
 }

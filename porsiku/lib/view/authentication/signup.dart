@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:porsiku/components/input_field.dart';
 import 'package:http/http.dart' as http;
-import 'package:porsiku/components/title.dart';
 import 'package:porsiku/constants/constants.dart';
+import 'package:porsiku/services/auth_service.dart';
 import 'dart:convert';
 import 'login.dart';
 import 'package:porsiku/components/button.dart'; // Updated import
@@ -120,8 +121,10 @@ class _SignupPageState extends State<SignupPage> {
       );
 
       setState(() => isLoading = false);
-
       if (response.statusCode == 200) {
+        // Mark onboarding as completed when user successfully signs up
+        await AuthService.markOnboardingCompleted();
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Berhasil daftar! Silakan login.")),
         );
@@ -151,73 +154,283 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 80),
-                const TitleText(text: 'Sign Up'),
-                const SizedBox(height: 8),
-                const SubtitleText(
-                  text: 'Daftar untuk mulai menggunakan PorsiKu',
-                ),
-                const SizedBox(height: 32),
-
-                // Input Fields
-                InputField(
-                  hintText: 'Username',
-                  controller: usernameController,
-                ),
-                const SizedBox(height: 16),
-                InputField(
-                  hintText: 'Email',
-                  keyboardType: TextInputType.emailAddress,
-                  controller: emailController,
-                ),
-                const SizedBox(height: 16),
-                InputField(
-                  hintText: 'Password',
-                  isPassword: true,
-                  controller: passwordController,
-                ),
-                const SizedBox(height: 24),
-
-                // Submit Button
-                Button(
-                  // Replaced PrimaryButton
-                  text: isLoading ? 'Loading...' : 'Sign Up',
-                  variant: ButtonVariant.primary, // Added variant
-                  onPressed: isLoading ? null : _register,
-                  isActive: !isLoading, // Added isActive based on isLoading
-                ),
-                const SizedBox(height: 16),
-
-                // Navigate to Login
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
-                  },
-                  child: const Text(
-                    'Already have an account? Login',
-                    style: TextStyle(
-                      color: AppColors.grey,
-                      decoration: TextDecoration.underline,
-                      fontSize: AppTexts.md,
-                    ),
+        child: Column(
+          children: [
+            // Header with Back Button Only
+            Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                top: AppSpacing.md,
+              ),
+              child: Row(
+                children: [
+                  _EnhancedCircleButton(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    onTap: () => Navigator.pop(context),
+                    backgroundColor: AppColors.white.withOpacity(0.9),
                   ),
-                ),
-                const SizedBox(height: 32),
-              ],
+                ],
+              ),
             ),
-          ),
+
+            // Main Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: AppSpacing.xxl),
+                    // Welcome Section
+                    Text(
+                      'Bergabung dengan PorsiKu',
+                      style: AppTextStyles.h3.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Daftar untuk mulai perjalanan\nnutrisi sehat bersama komunitas PorsiKu',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.grey,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: AppSpacing.xxl),
+
+                    // Signup Form Card
+                    Container(
+                      padding: EdgeInsets.all(AppSpacing.xl),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                        boxShadow: AppShadows.card,
+                      ),
+                      child: Column(
+                        children: [
+                          // Username Field
+                          InputField(
+                            hintText: 'Masukkan username',
+                            labelText: 'Username',
+                            controller: usernameController,
+                            textInputAction: TextInputAction.next,
+                            prefixIcon: Icon(
+                              Icons.person_outline_rounded,
+                              color: AppColors.grey,
+                              size: 20,
+                            ),
+                          ),
+                          SizedBox(height: AppSpacing.md),
+
+                          // Email Field
+                          InputField(
+                            hintText: 'Masukkan email',
+                            labelText: 'Email',
+                            keyboardType: TextInputType.emailAddress,
+                            controller: emailController,
+                            textInputAction: TextInputAction.next,
+                            prefixIcon: Icon(
+                              Icons.email_outlined,
+                              color: AppColors.grey,
+                              size: 20,
+                            ),
+                          ),
+                          SizedBox(height: AppSpacing.md),
+
+                          // Password Field
+                          InputField(
+                            hintText: 'Masukkan password',
+                            labelText: 'Password',
+                            isPassword: true,
+                            controller: passwordController,
+                            textInputAction: TextInputAction.done,
+                            prefixIcon: Icon(
+                              Icons.lock_outline_rounded,
+                              color: AppColors.grey,
+                              size: 20,
+                            ),
+                            onSubmitted: (_) => !isLoading ? _register() : null,
+                          ),
+                          SizedBox(height: AppSpacing.xl),
+                          // Submit Button
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: double.infinity,
+                            child: Button(
+                              text:
+                                  isLoading
+                                      ? 'Mendaftar...'
+                                      : 'Daftar Sekarang',
+                              variant: ButtonVariant.primary,
+                              onPressed: isLoading ? null : _register,
+                              isActive: !isLoading,
+                              icon:
+                                  isLoading
+                                      ? SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                AppColors.white,
+                                              ),
+                                        ),
+                                      )
+                                      : Icon(
+                                        Icons.person_add_rounded,
+                                        size: 18,
+                                        color: AppColors.white,
+                                      ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.xl),
+
+                    // Login Link
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.md,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                        border: Border.all(
+                          color: AppColors.lightGrey,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Sudah punya akun? ",
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.grey,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginPage(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              "Masuk Sekarang",
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.xxl),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+// Enhanced Circle Button Component from recipe_open.dart
+class _EnhancedCircleButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? backgroundColor;
+
+  const _EnhancedCircleButton({
+    required this.icon,
+    required this.onTap,
+    this.backgroundColor,
+  });
+
+  @override
+  State<_EnhancedCircleButton> createState() => _EnhancedCircleButtonState();
+}
+
+class _EnhancedCircleButtonState extends State<_EnhancedCircleButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: widget.backgroundColor ?? AppColors.white.withOpacity(0.9),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  widget.onTap();
+                },
+                onTapDown: (_) => _animationController.forward(),
+                onTapUp: (_) => _animationController.reverse(),
+                onTapCancel: () => _animationController.reverse(),
+                child: Icon(
+                  widget.icon,
+                  size: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

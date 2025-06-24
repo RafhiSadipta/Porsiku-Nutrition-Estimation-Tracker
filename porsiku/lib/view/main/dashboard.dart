@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:porsiku/components/section_card.dart';
 import 'package:porsiku/components/navbar.dart';
 import 'package:porsiku/components/calories_progress_indicator.dart';
 import 'package:porsiku/components/nutrient_progress_row.dart';
 import 'package:porsiku/view/main/analytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:porsiku/service/api_service.dart';
+import 'package:porsiku/services/api_service.dart';
 import 'package:porsiku/view/main/scan.dart';
+import 'package:porsiku/view/main/more.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -28,25 +31,93 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   int _selectedIndex = 0;
   int _currentCarouselIndex = 0;
 
+  // Animation Controllers
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late AnimationController _scaleController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
+
+  // Loading states
+  bool _isInitialLoading = true;
+  bool _isRefreshing = false;
   // Tambahan: Timer untuk auto-refresh saat hari berganti
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Initialize animation controllers
+    _initializeAnimations();
+
+    // Initialize data
     _initDailyTarget();
     _fetchTodayGoalAndRecentActivity();
     _fetchRecipeRecommendations();
     _startMidnightTimer();
+
+    // Start entrance animations
+    _startEntranceAnimations();
+  }
+
+  void _initializeAnimations() {
+    _fadeController = AnimationController(
+      duration: AppAnimations.slow,
+      vsync: this,
+    );
+
+    _slideController = AnimationController(
+      duration: AppAnimations.medium,
+      vsync: this,
+    );
+
+    _scaleController = AnimationController(
+      duration: AppAnimations.medium,
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeOutBack),
+    );
+  }
+
+  void _startEntranceAnimations() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _fadeController.forward();
+    });
+
+    Future.delayed(const Duration(milliseconds: 200), () {
+      _slideController.forward();
+    });
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _scaleController.forward();
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _midnightTimer?.cancel();
+    _fadeController.dispose();
+    _slideController.dispose();
+    _scaleController.dispose();
     super.dispose();
   }
 
@@ -98,10 +169,23 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _fetchTodayGoalAndRecentActivity() async {
+    if (!_isRefreshing) {
+      setState(() {
+        _isRefreshing = true;
+      });
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
     final token = prefs.getString('token');
-    if (userId == null || token == null) return;
+    if (userId == null || token == null) {
+      setState(() {
+        _isRefreshing = false;
+        _isInitialLoading = false;
+      });
+      return;
+    }
+
     try {
       // Fetch daily target
       final targetResp = await http.get(
@@ -171,6 +255,11 @@ class _DashboardPageState extends State<DashboardPage>
       }
     } catch (e) {
       // ignore error, optionally show snackbar
+    } finally {
+      setState(() {
+        _isRefreshing = false;
+        _isInitialLoading = false;
+      });
     }
   }
 
@@ -267,153 +356,223 @@ class _DashboardPageState extends State<DashboardPage>
         isLoadingRecipes = false;
       });
     }
-  }
-
-  void _onItemTapped(int index) {
+  }  void _onItemTapped(int index) {
     // If the 'Add' button is tapped, show the dialog
     if (index == 2) {
       _showAddOptionsDialog(context);
     } else {
-      // For other items, update the selected index and navigate
+      // For other items, update the selected index to show the corresponding page
       setState(() {
         _selectedIndex = index;
       });
-      if (index == 0) {
-        // Navigate to Home (already on dashboard, so do nothing or refresh)
-      } else if (index == 1) {
-        // Navigate to Recipes Page by name
-        // Navigator.pushNamed(context, '/recipes'); // Assuming you have a recipes page
-      } else if (index == 3) {
-        // Navigate to Analytics Page by name
-        // Navigator.pushNamed(context, '/analytics');
-      } else if (index == 4) {
-        // Navigate to More/Profile Page by name
-        // Navigator.pushNamed(context, '/profile');
-      }
     }
   }
 
   void _showAddOptionsDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
       ),
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+        return Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24.0),
                 ),
+                boxShadow: AppShadows.floating,
               ),
-              Center(
-                child: Text(
-                  "Add Food Entry",
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  _buildDialogOption(
-                    context,
-                    icon: Icons.camera_alt_outlined,
-                    label: "Capture",
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final result = await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ScanPage(),
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.lightGrey,
+                          borderRadius: BorderRadius.circular(
+                            AppBorderRadius.sm,
+                          ),
                         ),
-                      );
-                      if (result == 'refresh') {
-                        _fetchTodayGoalAndRecentActivity();
-                      }
-                    },
-                  ),
-                  _buildDialogOption(
-                    context,
-                    icon: Icons.text_fields,
-                    label: "Text",
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await TextInputPage.show(context);
-                      _fetchTodayGoalAndRecentActivity();
-                    },
-                  ),
-                  _buildDialogOption(
-                    context,
-                    icon: Icons.mic_none_outlined,
-                    label: "Speech",
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await AudioInputPage.show(context);
-                      _fetchTodayGoalAndRecentActivity();
-                    },
-                  ),
-                  _buildDialogOption(
-                    context,
-                    icon: Icons.bookmark_border_outlined,
-                    label: "Saved",
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showSavedMealBottomSheet();
-                    },
-                  ),
-                ],
+                      ),
+                    ).animate().scale(
+                      duration: AppAnimations.medium,
+                      curve: Curves.elasticOut,
+                    ),
+
+                    // Title
+                    Center(
+                          child: Text(
+                            "Add Food Entry",
+                            style: AppTextStyles.h3.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        )
+                        .animate()
+                        .fadeIn(duration: AppAnimations.medium, delay: 100.ms)
+                        .slideY(
+                          begin: 0.3,
+                          duration: AppAnimations.medium,
+                          curve: Curves.easeOutCubic,
+                        ),
+
+                    SizedBox(height: AppSpacing.lg),
+
+                    // Options grid
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: <Widget>[
+                        _buildEnhancedDialogOption(
+                          context,
+                          icon: Icons.camera_alt_outlined,
+                          label: "Capture",
+                          color: AppColors.primary,
+                          delay: 0,
+                          onTap: () async {
+                            Navigator.pop(context);
+                            final result = await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const ScanPage(),
+                              ),
+                            );
+                            if (result == 'refresh') {
+                              _fetchTodayGoalAndRecentActivity();
+                            }
+                          },
+                        ),
+                        _buildEnhancedDialogOption(
+                          context,
+                          icon: Icons.text_fields,
+                          label: "Text",
+                          color: AppColors.info,
+                          delay: 100,
+                          onTap: () async {
+                            Navigator.pop(context);
+                            await TextInputPage.show(context);
+                            _fetchTodayGoalAndRecentActivity();
+                          },
+                        ),
+                        _buildEnhancedDialogOption(
+                          context,
+                          icon: Icons.mic_none_outlined,
+                          label: "Speech",
+                          color: AppColors.success,
+                          delay: 200,
+                          onTap: () async {
+                            Navigator.pop(context);
+                            await AudioInputPage.show(context);
+                            _fetchTodayGoalAndRecentActivity();
+                          },
+                        ),
+                        _buildEnhancedDialogOption(
+                          context,
+                          icon: Icons.bookmark_border_outlined,
+                          label: "Saved",
+                          color: AppColors.warning,
+                          delay: 300,
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showSavedMealBottomSheet();
+                          },
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: AppSpacing.lg),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16.0),
-            ],
-          ),
-        );
+            )
+            .animate()
+            .slideY(
+              begin: 1.0,
+              duration: AppAnimations.medium,
+              curve: Curves.easeOutCubic,
+            )
+            .fadeIn(duration: AppAnimations.medium);
       },
     );
   }
 
-  Widget _buildDialogOption(
+  Widget _buildEnhancedDialogOption(
     BuildContext context, {
     required IconData icon,
     required String label,
+    required Color color,
+    required int delay,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
+      borderRadius: BorderRadius.circular(AppBorderRadius.md),
+      child: Container(
+        padding: EdgeInsets.all(AppSpacing.sm),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
+            // Icon container with gradient background
             Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Icon(icon, size: 24.0, color: Colors.blue),
-            ),
-            const SizedBox(height: 8.0),
+                  padding: EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                    border: Border.all(color: color.withOpacity(0.2), width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, size: AppIcons.lg, color: color),
+                )
+                .animate()
+                .scale(
+                  delay: Duration(milliseconds: delay),
+                  duration: AppAnimations.medium,
+                  curve: Curves.elasticOut,
+                )
+                .fadeIn(
+                  delay: Duration(milliseconds: delay),
+                  duration: AppAnimations.medium,
+                ),
+
+            SizedBox(height: AppSpacing.sm),
+
+            // Label
             Text(
-              label,
-              style: TextStyle(fontSize: 14.0, color: Colors.black54),
-            ),
+                  label,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: AppTexts.medium,
+                  ),
+                )
+                .animate()
+                .fadeIn(
+                  delay: Duration(milliseconds: delay + 100),
+                  duration: AppAnimations.medium,
+                )
+                .slideY(
+                  begin: 0.3,
+                  delay: Duration(milliseconds: delay + 100),
+                  duration: AppAnimations.medium,
+                  curve: Curves.easeOutCubic,
+                ),
           ],
         ),
       ),
@@ -480,7 +639,7 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: IndexedStack(
           index: _selectedIndex,
@@ -489,8 +648,7 @@ class _DashboardPageState extends State<DashboardPage>
             const RecipePage(),
             Container(), // This corresponds to index 2, which is 'Add'
             const AnalyticsPage(),
-            // Placeholder for More/Profile Page (index 4)
-            // Container(child: Center(child: Text("More/Profile Page"))),
+            const MorePage(),
           ],
         ),
       ),
@@ -503,53 +661,144 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildDashboardContent() {
     if (_futureDailyTarget == null) {
-      return const Center(
-        child: Text('User ID tidak ditemukan. Silakan login ulang.'),
+      return Center(
+        child: Text(
+          'User ID tidak ditemukan. Silakan login ulang.',
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
       );
     }
+
     return RefreshIndicator(
+      color: AppColors.primary,
+      backgroundColor: AppColors.surface,
       onRefresh: () async {
+        setState(() {
+          _isRefreshing = true;
+        });
+
         await Future.wait([
           _fetchTodayGoalAndRecentActivity(),
           _fetchRecipeRecommendations(),
         ]);
+
+        // Add a small delay for smooth UX
+        await Future.delayed(const Duration(milliseconds: 500));
       },
       child: FutureBuilder<Map<String, dynamic>>(
         future: _futureDailyTarget,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              _isInitialLoading) {
+            return _buildLoadingState();
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Error: \\${snapshot.error}'));
+            return _buildErrorState(snapshot.error.toString());
           }
 
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 16.0),
-                SectionCard(
-                  title: "Today's Goal",
-                  contentChild: _buildTodayGoalContent(todayGoal),
-                ),
-                const SizedBox(height: 16.0),
-                SectionCard(
-                  title: "Recipe Recommendation",
-                  contentChild: _buildRecommendationContent(
-                    recipeRecommendations,
+          return AnimatedBuilder(
+            animation: Listenable.merge([
+              _fadeController,
+              _slideController,
+              _scaleController,
+            ]),
+            builder: (context, child) {
+              return FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Welcome header
+                          _buildWelcomeHeader()
+                              .animate()
+                              .fadeIn(
+                                duration: AppAnimations.medium,
+                                delay: 200.ms,
+                              )
+                              .slideX(
+                                begin: -0.3,
+                                duration: AppAnimations.medium,
+                                curve: Curves.easeOutCubic,
+                              ),
+
+                          SizedBox(height: AppSpacing.lg), // Today's Goal Card
+                          SectionCard(
+                                title: "Today's Goal",
+                                headerIcon: Icons.track_changes,
+                                showGradientAccent: false,
+                                contentChild: _buildTodayGoalContent(todayGoal),
+                              )
+                              .animate()
+                              .fadeIn(
+                                duration: AppAnimations.medium,
+                                delay: 400.ms,
+                              )
+                              .slideY(
+                                begin: 0.3,
+                                duration: AppAnimations.medium,
+                                curve: Curves.easeOutCubic,
+                              ),
+
+                          SizedBox(height: AppSpacing.md),
+
+                          // Recipe Recommendation Card
+                          SectionCard(
+                                title: "Recipe Recommendation",
+                                headerIcon: Icons.restaurant_menu,
+                                isLoading: isLoadingRecipes,
+                                contentChild: _buildRecommendationContent(
+                                  recipeRecommendations,
+                                ),
+                              )
+                              .animate()
+                              .fadeIn(
+                                duration: AppAnimations.medium,
+                                delay: 600.ms,
+                              )
+                              .slideY(
+                                begin: 0.3,
+                                duration: AppAnimations.medium,
+                                curve: Curves.easeOutCubic,
+                              ),
+
+                          SizedBox(height: AppSpacing.md),
+
+                          // Today's Meal Log Card
+                          SectionCard(
+                                title: "Today's Meal Log",
+                                headerIcon: Icons.food_bank,
+                                contentChild: _buildRecentActivityContent(
+                                  recentActivity,
+                                ),
+                              )
+                              .animate()
+                              .fadeIn(
+                                duration: AppAnimations.medium,
+                                delay: 800.ms,
+                              )
+                              .slideY(
+                                begin: 0.3,
+                                duration: AppAnimations.medium,
+                                curve: Curves.easeOutCubic,
+                              ),
+
+                          SizedBox(height: AppSpacing.xl),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16.0),
-                SectionCard(
-                  title: "Today's Meal Log",
-                  contentChild: _buildRecentActivityContent(recentActivity),
-                ),
-                const SizedBox(height: 16.0),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -585,21 +834,21 @@ class _DashboardPageState extends State<DashboardPage>
                 title: 'Protein',
                 currentValue: toDouble(todayGoal['protein']['current']).toInt(),
                 targetValue: toDouble(todayGoal['protein']['target']).toInt(),
-                progressColor: Colors.red,
-              ),
-              const SizedBox(height: 8),
-              NutrientProgressRow(
-                title: 'Fat',
-                currentValue: toDouble(todayGoal['fat']['current']).toInt(),
-                targetValue: toDouble(todayGoal['fat']['target']).toInt(),
-                progressColor: Colors.green,
+                progressColor: AppColors.red,
               ),
               const SizedBox(height: 8),
               NutrientProgressRow(
                 title: 'Carbs',
                 currentValue: toDouble(todayGoal['carbs']['current']).toInt(),
                 targetValue: toDouble(todayGoal['carbs']['target']).toInt(),
-                progressColor: Colors.yellow,
+                progressColor: AppColors.yellow,
+              ),
+              const SizedBox(height: 8),
+              NutrientProgressRow(
+                title: 'Fats',
+                currentValue: toDouble(todayGoal['fat']['current']).toInt(),
+                targetValue: toDouble(todayGoal['fat']['target']).toInt(),
+                progressColor: AppColors.green,
               ),
             ],
           ),
@@ -697,21 +946,84 @@ class _DashboardPageState extends State<DashboardPage>
     List<Map<String, dynamic>> recentActivity,
   ) {
     if (recentActivity.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Text(
-            "You don't have any meal log yet. Capture your meal now!",
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 16.0,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
+      return Container(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+        child: Column(
+          children: [
+            // Empty state illustration
+            Container(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.subtle,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.restaurant_menu,
+                    size: 48,
+                    color: AppColors.white,
+                  ),
+                )
+                .animate()
+                .scale(duration: AppAnimations.medium, curve: Curves.elasticOut)
+                .fadeIn(),
+
+            SizedBox(height: AppSpacing.md),
+
+            Text(
+                  "No meals logged yet",
+                  style: AppTextStyles.h4.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 200.ms)
+                .slideY(begin: 0.3, duration: AppAnimations.medium),
+
+            SizedBox(height: AppSpacing.sm),
+
+            Text(
+                  "Capture your meal now to start tracking your nutrition!",
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                )
+                .animate()
+                .fadeIn(delay: 400.ms)
+                .slideY(begin: 0.3, duration: AppAnimations.medium),
+
+            SizedBox(height: AppSpacing.lg),
+
+            // Call-to-action button
+            ElevatedButton.icon(
+                  onPressed: () => _onItemTapped(2), // Trigger add options
+                  icon: Icon(Icons.add_a_photo, size: AppIcons.sm),
+                  label: Text('Add Your First Meal'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.sm,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                    ),
+                    elevation: 4,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 600.ms)
+                .scale(
+                  begin: const Offset(0.8, 0.8),
+                  duration: AppAnimations.medium,
+                  curve: Curves.elasticOut,
+                ),
+          ],
         ),
       );
     }
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -720,162 +1032,670 @@ class _DashboardPageState extends State<DashboardPage>
         final activity = recentActivity[index];
         final isFoto = activity['is_foto'] == true;
         final image = activity['image'] ?? 'assets/images/placeholder.png';
-        Widget imageWidget;
-        if (isFoto && image.toString().startsWith('http')) {
-          imageWidget = Image.network(
-            image,
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-            errorBuilder:
-                (context, error, stackTrace) => Image.asset(
-                  'assets/images/placeholder.png',
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
-          );
-        } else if (isFoto &&
-            image.toString().isNotEmpty &&
-            !image.toString().startsWith('http')) {
-          imageWidget = Image.file(
-            File(image),
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-            errorBuilder:
-                (context, error, stackTrace) => Image.asset(
-                  'assets/images/placeholder.png',
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
-          );
-        } else {
-          imageWidget = Image.asset(
-            'assets/images/placeholder.png',
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-          );
-        }
-        return ListTile(
-          leading: ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: imageWidget,
-          ),
-          title: Text(
-            activity['title']! as String,
-            style: TextStyle(fontWeight: FontWeight.w500),
-          ),
-          subtitle: Text('${activity['calories']} cal, ${activity['mass']}'),
-          trailing: IconButton(
-            icon: Icon(Icons.close, color: Colors.grey, size: 20.0),
-            onPressed: () async {
-              await _deleteConsumption(activity);
-            },
-          ),
-          contentPadding: EdgeInsets.zero,
-          onTap: () async {
-            final konsumsiIdRaw = activity['id'];
-            if (konsumsiIdRaw == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('ID konsumsi tidak ditemukan')),
-              );
-              return;
-            }
-            final konsumsiId =
-                konsumsiIdRaw is int
-                    ? konsumsiIdRaw
-                    : int.tryParse(konsumsiIdRaw.toString());
-            if (konsumsiId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('ID konsumsi tidak valid')),
-              );
-              return;
-            }
 
-            // Tampilkan loading
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder:
-                  (context) => const Center(child: CircularProgressIndicator()),
+        Widget imageWidget = _buildMealImage(isFoto, image);
+
+        return Container(
+              margin: EdgeInsets.only(bottom: AppSpacing.xs),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                border: Border.all(
+                  color: AppColors.lightGrey.withOpacity(0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                  onTap: () => _handleMealTap(activity),
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpacing.sm),
+                    child: Row(
+                      children: [
+                        // Enhanced meal image
+                        Hero(
+                          tag: 'meal_${activity['id']}',
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                AppBorderRadius.md,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                AppBorderRadius.md,
+                              ),
+                              child: imageWidget,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(width: AppSpacing.md),
+
+                        // Enhanced meal info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Meal name with truncation
+                              Text(
+                                activity['title']! as String,
+                                style: AppTextStyles.label.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+
+                              SizedBox(height: AppSpacing.xs),
+
+                              // Enhanced meal details
+                              Row(
+                                children: [
+                                  // Calories with icon
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.local_fire_department,
+                                        size: AppIcons.xs,
+                                        color: AppColors.warning,
+                                      ),
+                                      SizedBox(width: 2),
+                                      Text(
+                                        '${activity['calories']} cal',
+                                        style: AppTextStyles.caption.copyWith(
+                                          color: AppColors.textSecondary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  Text(
+                                    ' • ',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+
+                                  // Meal time with icon
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        _getMealTimeIcon(
+                                          activity['mass'] ?? '',
+                                        ),
+                                        size: AppIcons.xs,
+                                        color: AppColors.info,
+                                      ),
+                                      SizedBox(width: 2),
+                                      Text(
+                                        activity['mass'] ?? '',
+                                        style: AppTextStyles.caption.copyWith(
+                                          color: AppColors.textSecondary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Enhanced action buttons
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(width: AppSpacing.xs),
+                            // Delete button
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(
+                                  AppBorderRadius.sm,
+                                ),
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.delete_outline,
+                                  color: AppColors.error,
+                                  size: AppIcons.sm,
+                                ),
+                                onPressed:
+                                    () => _showDeleteConfirmation(activity),
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            )
+            .animate(delay: Duration(milliseconds: index * 100))
+            .fadeIn(duration: AppAnimations.medium, curve: Curves.easeOut)
+            .slideX(
+              begin: 0.3,
+              duration: AppAnimations.medium,
+              curve: Curves.easeOutCubic,
             );
-
-            final konsumsiDetail = await fetchKonsumsiDetail(konsumsiId);
-
-            // Tutup loading
-            if (Navigator.canPop(context)) Navigator.pop(context);
-
-            if (konsumsiDetail != null) {
-              final nutritionItems =
-                  konsumsiDetail['nutrition_items'] as List<dynamic>?;
-              final nutritionResult =
-                  nutritionItems != null
-                      ? nutritionItems
-                          .map(
-                            (item) => {
-                              'nama_makanan': item['nama_makanan'] ?? '',
-                              'jumlah': item['jumlah'] ?? '',
-                              'waktu_makan':
-                                  konsumsiDetail['waktu_makan'] ?? 'Dinner',
-                              'is_saved': konsumsiDetail['is_saved'] ?? false,
-                              'nutrition_total': {
-                                'kalori': item['kalori'] ?? 0,
-                                'protein': item['protein'] ?? 0.0,
-                                'lemak': item['lemak'] ?? 0.0,
-                                'karbohidrat': item['karbohidrat'] ?? 0.0,
-                              },
-                            },
-                          )
-                          .toList()
-                      : [
-                        {
-                          'nama_makanan': konsumsiDetail['nama_makanan'] ?? '',
-                          'jumlah': '1 serving',
-                          'waktu_makan':
-                              konsumsiDetail['waktu_makan'] ?? 'Dinner',
-                          'is_saved': konsumsiDetail['is_saved'] ?? false,
-                          'nutrition_total': {
-                            'kalori': konsumsiDetail['kalori_total'] ?? 0,
-                            'protein': konsumsiDetail['protein_total'] ?? 0,
-                            'lemak': konsumsiDetail['lemak_total'] ?? 0,
-                            'karbohidrat':
-                                konsumsiDetail['karbohidrat_total'] ?? 0,
-                          },
-                        },
-                      ];
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (context) => ResultPage(
-                        foodListText: konsumsiDetail['nama_makanan'] ?? '',
-                        nutritionResult: nutritionResult,
-                        imagePath: konsumsiDetail['foto'] ?? '',
-                        existingKonsumsiId: konsumsiId.toString(),
-                        isViewMode: true,
-                      ),
-                ),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Gagal mengambil detail konsumsi'),
-                ),
-              );
-            }
-          },
-        );
       },
-      separatorBuilder:
-          (context, index) => const Divider(height: 1, indent: 66),
+      separatorBuilder: (context, index) => SizedBox(height: AppSpacing.xs),
     );
+  }
+
+  Widget _buildMealImage(bool isFoto, String image) {
+    if (isFoto && image.isNotEmpty && image.startsWith('http')) {
+      return Image.network(
+        image,
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: AppColors.lightGrey,
+              borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+      );
+    } else if (isFoto && image.isNotEmpty && !image.startsWith('http')) {
+      return Image.file(
+        File(image),
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+      );
+    } else {
+      return _buildPlaceholderImage();
+    }
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        gradient: AppGradients.subtle,
+        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+      ),
+      child: Icon(Icons.restaurant, color: AppColors.white, size: AppIcons.md),
+    );
+  }
+
+  IconData _getMealTimeIcon(String mealTime) {
+    switch (mealTime.toLowerCase()) {
+      case 'breakfast':
+        return Icons.wb_sunny;
+      case 'lunch':
+        return Icons.wb_sunny_outlined;
+      case 'dinner':
+        return Icons.nights_stay;
+      case 'snack':
+        return Icons.coffee;
+      default:
+        return Icons.restaurant;
+    }
+  }
+
+  void _handleMealTap(Map<String, dynamic> activity) async {
+    final konsumsiIdRaw = activity['id'];
+    if (konsumsiIdRaw == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ID konsumsi tidak ditemukan')),
+      );
+      return;
+    }
+
+    final konsumsiId =
+        konsumsiIdRaw is int
+            ? konsumsiIdRaw
+            : int.tryParse(konsumsiIdRaw.toString());
+
+    if (konsumsiId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('ID konsumsi tidak valid')));
+      return;
+    }
+
+    // Show loading with better UX
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => Center(
+            child: Container(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                boxShadow: AppShadows.floating,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.blue),
+                  ),
+                  SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Loading meal details...',
+                    style: AppTextStyles.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+
+    final konsumsiDetail = await fetchKonsumsiDetail(konsumsiId);
+
+    // Close loading
+    if (Navigator.canPop(context)) Navigator.pop(context);
+
+    if (konsumsiDetail != null) {
+      final nutritionItems =
+          konsumsiDetail['nutrition_items'] as List<dynamic>?;
+      final nutritionResult =
+          nutritionItems != null
+              ? nutritionItems
+                  .map(
+                    (item) => {
+                      'nama_makanan': item['nama_makanan'] ?? '',
+                      'jumlah': item['jumlah'] ?? '',
+                      'waktu_makan': konsumsiDetail['waktu_makan'] ?? 'Dinner',
+                      'is_saved': konsumsiDetail['is_saved'] ?? false,
+                      'nutrition_total': {
+                        'kalori': item['kalori'] ?? 0,
+                        'protein': item['protein'] ?? 0.0,
+                        'lemak': item['lemak'] ?? 0.0,
+                        'karbohidrat': item['karbohidrat'] ?? 0.0,
+                      },
+                    },
+                  )
+                  .toList()
+              : [
+                {
+                  'nama_makanan': konsumsiDetail['nama_makanan'] ?? '',
+                  'jumlah': '1 serving',
+                  'waktu_makan': konsumsiDetail['waktu_makan'] ?? 'Dinner',
+                  'is_saved': konsumsiDetail['is_saved'] ?? false,
+                  'nutrition_total': {
+                    'kalori': konsumsiDetail['kalori_total'] ?? 0,
+                    'protein': konsumsiDetail['protein_total'] ?? 0,
+                    'lemak': konsumsiDetail['lemak_total'] ?? 0,
+                    'karbohidrat': konsumsiDetail['karbohidrat_total'] ?? 0,
+                  },
+                },
+              ];
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => ResultPage(
+                foodListText: konsumsiDetail['nama_makanan'] ?? '',
+                nutritionResult: nutritionResult,
+                imagePath: konsumsiDetail['foto'] ?? '',
+                existingKonsumsiId: konsumsiId.toString(),
+                isViewMode: true,
+              ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal mengambil detail konsumsi')),
+      );
+    }
+  }
+
+  void _showDeleteConfirmation(Map<String, dynamic> activity) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.md),
+            ),
+            title: Text('Delete Meal', style: AppTextStyles.h4),
+            content: Text(
+              'Are you sure you want to delete "${activity['title']}"?',
+              style: AppTextStyles.bodyMedium,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: AppTextStyles.label.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _deleteConsumption(activity);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: AppColors.white,
+                ),
+                child: Text('Delete'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Loading state with shimmer effects
+  Widget _buildLoadingState() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Loading welcome header
+          Container(
+            height: 60,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppAnimationPresets.shimmerBase,
+              borderRadius: BorderRadius.circular(AppBorderRadius.md),
+            ),
+          ),
+
+          SizedBox(height: AppSpacing.lg),
+
+          // Loading cards
+          ...List.generate(
+            3,
+            (index) => Padding(
+              padding: EdgeInsets.only(bottom: AppSpacing.md),
+              child: Container(
+                height: 120,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppAnimationPresets.shimmerBase,
+                  borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Error state with retry option
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: AppColors.error),
+
+            SizedBox(height: AppSpacing.md),
+
+            Text(
+              'Oops! Something went wrong',
+              style: AppTextStyles.h3.copyWith(color: AppColors.textPrimary),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: AppSpacing.sm),
+
+            Text(
+              error,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: AppSpacing.lg),
+
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _futureDailyTarget =
+                      _fetchTodayGoalAndRecentActivity()
+                          as Future<Map<String, dynamic>>?;
+                });
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Enhanced welcome header with delightful animations and interactions
+  Widget _buildWelcomeHeader() {
+    final hour = DateTime.now().hour;
+    String greeting;
+    IconData greetingIcon;
+    Color gradientStart;
+    Color gradientEnd;
+
+    if (hour < 12) {
+      greeting = 'Good Morning';
+      greetingIcon = Icons.wb_sunny;
+      gradientStart = const Color(0xFFFFD54F);
+      gradientEnd = AppColors.primary;
+    } else if (hour < 17) {
+      greeting = 'Good Afternoon';
+      greetingIcon = Icons.wb_sunny_outlined;
+      gradientStart = AppColors.primary;
+      gradientEnd = const Color(0xFFFF8A65);
+    } else {
+      greeting = 'Good Evening';
+      greetingIcon = Icons.nights_stay;
+      gradientStart = const Color(0xFF5C6BC0);
+      gradientEnd = const Color(0xFF283593);
+    }
+
+    return Container(
+          margin: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+              onTap: () {
+                // Show a delightful greeting animation or user profile
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Hello! Have a wonderful day! 🌟'),
+                    backgroundColor: AppColors.success,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [gradientStart, gradientEnd],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradientEnd.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Animated greeting icon
+                    Container(
+                          padding: EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(
+                              AppBorderRadius.md,
+                            ),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Icon(
+                            greetingIcon,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        )
+                        .animate(
+                          onPlay:
+                              (controller) => controller.repeat(reverse: true),
+                        )
+                        .scale(
+                          duration: const Duration(seconds: 2),
+                          begin: const Offset(1.0, 1.0),
+                          end: const Offset(1.1, 1.1),
+                          curve: Curves.easeInOut,
+                        ),
+
+                    SizedBox(width: AppSpacing.md),
+
+                    // Enhanced greeting content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Enhanced greeting text with typewriter effect
+                          AnimatedTextKit(
+                            animatedTexts: [
+                              TypewriterAnimatedText(
+                                greeting,
+                                textStyle: AppTextStyles.h3.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  shadows: [
+                                    Shadow(
+                                      offset: const Offset(0, 2),
+                                      blurRadius: 4,
+                                      color: Colors.black.withOpacity(0.2),
+                                    ),
+                                  ],
+                                ),
+                                speed: const Duration(milliseconds: 100),
+                              ),
+                            ],
+                            isRepeatingAnimation: false,
+                            displayFullTextOnTap: true,
+                          ),
+
+                          SizedBox(height: AppSpacing.xs),
+
+                          // Motivational subtitle with shimmer effect
+                          Text(
+                                'Ready to nourish your body? ✨',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: Colors.white.withOpacity(0.9),
+                                  shadows: [
+                                    Shadow(
+                                      offset: const Offset(0, 1),
+                                      blurRadius: 2,
+                                      color: Colors.black.withOpacity(0.2),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              .animate()
+                              .fadeIn(delay: const Duration(milliseconds: 800))
+                              .slideX(
+                                begin: -0.3,
+                                duration: AppAnimations.medium,
+                                curve: Curves.easeOutCubic,
+                              ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        )
+        .animate()
+        .fadeIn(duration: AppAnimations.medium, curve: Curves.easeOut)
+        .slideY(
+          begin: -0.5,
+          duration: AppAnimations.medium,
+          curve: Curves.easeOutCubic,
+        );
   }
 }
 
-class _RecipeCarousel extends StatelessWidget {
+class _RecipeCarousel extends StatefulWidget {
   final List<Map<String, dynamic>> recommendations;
   final int currentCarouselIndex;
   final Function(int, CarouselPageChangedReason) onPageChanged;
@@ -887,172 +1707,488 @@ class _RecipeCarousel extends StatelessWidget {
   });
 
   @override
+  State<_RecipeCarousel> createState() => _RecipeCarouselState();
+}
+
+class _RecipeCarouselState extends State<_RecipeCarousel>
+    with TickerProviderStateMixin {
+  late List<AnimationController> _cardControllers;
+  late List<Animation<double>> _cardAnimations;
+  late AnimationController _indicatorController;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    // Initialize card animations
+    _cardControllers = List.generate(
+      widget.recommendations.length,
+      (index) =>
+          AnimationController(duration: AppAnimations.medium, vsync: this),
+    );
+
+    _cardAnimations =
+        _cardControllers.map((controller) {
+          return CurvedAnimation(parent: controller, curve: Curves.easeOutBack);
+        }).toList();
+
+    // Start animations with staggered delay
+    for (int i = 0; i < _cardControllers.length; i++) {
+      Future.delayed(Duration(milliseconds: i * 100), () {
+        if (mounted) {
+          _cardControllers[i].forward();
+        }
+      });
+    }
+
+    // Initialize indicator animation
+    _indicatorController = AnimationController(
+      duration: AppAnimations.fast,
+      vsync: this,
+    );
+    _indicatorController.forward();
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _cardControllers) {
+      controller.dispose();
+    }
+    _indicatorController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (widget.recommendations.isEmpty) {
+      return _buildEmptyState();
+    }
+
     return Column(
       children: [
-        CarouselSlider(
-          options: CarouselOptions(
-            height: 200.0,
-            autoPlay: false,
-            enlargeCenterPage: false,
-            viewportFraction: 0.9,
-            aspectRatio: 2.0,
-            onPageChanged: onPageChanged,
+        // Enhanced carousel with animations
+        SizedBox(
+          height: 220,
+          child: CarouselSlider.builder(
+            itemCount: widget.recommendations.length,
+            options: CarouselOptions(
+              height: 220,
+              autoPlay: true,
+              autoPlayInterval: const Duration(seconds: 4),
+              autoPlayAnimationDuration: AppAnimations.medium,
+              enlargeCenterPage: true,
+              enlargeFactor: 0.2,
+              viewportFraction: 0.85,
+              onPageChanged: widget.onPageChanged,
+            ),
+            itemBuilder: (context, index, realIndex) {
+              return AnimatedBuilder(
+                animation: _cardAnimations[index],
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: 0.8 + (_cardAnimations[index].value * 0.2),
+                    child: Opacity(
+                      opacity: _cardAnimations[index].value,
+                      child: _buildRecipeCard(
+                        widget.recommendations[index],
+                        index,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
-          items:
-              recommendations.map((rec) {
-                return Builder(
-                  builder: (BuildContext context) {
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => RecipeOpenPage(recipe: rec),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: MediaQuery.of(context).size.width,
-                        margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(
-                            AppBorderRadius.md,
-                          ),
-                          image: DecorationImage(
-                            image: NetworkImage(rec['image']),
-                            fit: BoxFit.cover,
-                          ),
+        ),
+
+        SizedBox(height: AppSpacing.sm),
+
+        // Enhanced page indicators
+        AnimatedBuilder(
+          animation: _indicatorController,
+          builder: (context, child) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                widget.recommendations.length,
+                (index) => _buildPageIndicator(index),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecipeCard(Map<String, dynamic> recipe, int index) {
+    return Hero(
+      tag: 'recipe_${recipe['id'] ?? index}',
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.05),
+              blurRadius: 40,
+              offset: const Offset(0, 16),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+            onTap: () => _navigateToRecipe(recipe),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                  stops: const [0.4, 1.0],
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Background image with loading state
+                    _buildRecipeImage(recipe['image']),
+
+                    // Gradient overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.8),
+                          ],
+                          stops: const [0.5, 1.0],
                         ),
-                        child: Stack(
+                      ),
+                    ),
+
+                    // Content overlay
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: EdgeInsets.all(AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(8.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(
-                                      AppBorderRadius.md,
-                                    ),
-                                    bottomRight: Radius.circular(
-                                      AppBorderRadius.md,
-                                    ),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      rec['title'],
-                                      style: TextStyle(
-                                        fontSize: AppTexts.md,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          '${rec['calories']}cal',
-                                          style: TextStyle(
-                                            fontSize: AppTexts.sm,
-                                            color: AppColors.white,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${rec['protein']}g Prot',
-                                          style: TextStyle(
-                                            fontSize: AppTexts.sm,
-                                            color: AppColors.white,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${rec['weight']}g',
-                                          style: TextStyle(
-                                            fontSize: AppTexts.sm,
-                                            color: AppColors.white,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${rec['fiber']}g Fiber',
-                                          style: TextStyle(
-                                            fontSize: AppTexts.sm,
-                                            color: AppColors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                            // Recipe title
+                            Text(
+                              recipe['title'] ?? 'Delicious Recipe',
+                              style: AppTextStyles.h4.copyWith(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            if (rec['duration'] != null)
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.7),
-                                    borderRadius: BorderRadius.circular(
-                                      AppBorderRadius.sm,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.timer_outlined,
-                                        color: AppColors.white,
-                                        size: AppTexts.sm,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        rec['duration'],
-                                        style: TextStyle(
-                                          fontSize: AppTexts.xs,
-                                          color: AppColors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+
+                            SizedBox(height: AppSpacing.xs),
+
+                            // Nutrition badges
+                            Wrap(
+                              spacing: AppSpacing.xs,
+                              runSpacing: AppSpacing.xs,
+                              children: [
+                                _buildNutritionBadge(
+                                  Icons.local_fire_department,
+                                  '${recipe['calories'] ?? 0}',
+                                  'cal',
+                                  AppColors.warning,
                                 ),
-                              ),
+                                if (recipe['duration'] != null)
+                                  _buildNutritionBadge(
+                                    Icons.timer_outlined,
+                                    recipe['duration'],
+                                    '',
+                                    AppColors.white,
+                                  ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                );
-              }).toList(),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(recommendations.length, (index) {
-            bool isActive = index == currentCarouselIndex;
-            return Container(
-              width: isActive ? AppBorderRadius.lg : AppBorderRadius.sm,
-              height: AppBorderRadius.sm,
-              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppBorderRadius.infinity),
-                color: isActive ? AppColors.black : AppColors.lightGrey,
+                    ),
+
+                    // Top badges
+                    Positioned(
+                      top: AppSpacing.sm,
+                      right: AppSpacing.sm,
+                      child: Column(
+                        children: [
+                          // Favorite button
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.black.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.bookmark_outline_rounded,
+                                color: AppColors.primary,
+                                size: AppIcons.sm,
+                              ),
+                              onPressed: () => _toggleFavorite(recipe),
+                              constraints: const BoxConstraints(
+                                minWidth: 36,
+                                minHeight: 36,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+
+                          if (recipe['difficulty'] != null) ...[
+                            SizedBox(height: AppSpacing.xs),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: AppSpacing.xs,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getDifficultyColor(
+                                  recipe['difficulty'],
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  AppBorderRadius.sm,
+                                ),
+                              ),
+                              child: Text(
+                                recipe['difficulty'].toString().toUpperCase(),
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-          }),
+            ),
+          ),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildRecipeImage(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return Container(
+        color: AppColors.lightGrey.withOpacity(0.3),
+        child: Icon(
+          Icons.restaurant_menu,
+          size: 64,
+          color: AppColors.textSecondary,
+        ),
+      );
+    }
+
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+
+        return Container(
+          color: AppColors.lightGrey.withOpacity(0.3),
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                value:
+                    loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+              ),
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: AppColors.lightGrey.withOpacity(0.3),
+          child: Icon(
+            Icons.broken_image_outlined,
+            size: 64,
+            color: AppColors.textSecondary,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNutritionBadge(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+  ) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          SizedBox(width: 4),
+          Text(
+            '$value${label.isNotEmpty ? ' $label' : ''}',
+            style: AppTextStyles.caption.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageIndicator(int index) {
+    final isActive = index == widget.currentCarouselIndex;
+
+    return AnimatedContainer(
+      duration: AppAnimations.fast,
+      curve: Curves.easeInOut,
+      width: isActive ? 24 : 8,
+      height: 8,
+      margin: EdgeInsets.symmetric(horizontal: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+        color:
+            isActive ? AppColors.primary : AppColors.lightGrey.withOpacity(0.5),
+        boxShadow:
+            isActive
+                ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+                : null,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        color: AppColors.lightGrey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+        border: Border.all(
+          color: AppColors.lightGrey.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.restaurant_menu_outlined,
+              size: 48,
+              color: AppColors.textSecondary,
+            ),
+            SizedBox(height: AppSpacing.sm),
+            Text(
+              'No recipes available',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getDifficultyColor(dynamic difficulty) {
+    final difficultyStr = difficulty.toString().toLowerCase();
+    switch (difficultyStr) {
+      case 'easy':
+        return AppColors.success;
+      case 'medium':
+        return AppColors.warning;
+      case 'hard':
+        return AppColors.error;
+      default:
+        return AppColors.info;
+    }
+  }
+
+  void _navigateToRecipe(Map<String, dynamic> recipe) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) =>
+                RecipeOpenPage(recipe: recipe),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            ),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  void _toggleFavorite(Map<String, dynamic> recipe) {
+    // TODO: Implement favorite functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Added to favorites!'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+        ),
+      ),
     );
   }
 }

@@ -1,12 +1,15 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:porsiku/constants/constants.dart';
 import 'viewimage.dart';
 import 'result.dart';
 
@@ -17,20 +20,53 @@ class ScanPage extends StatefulWidget {
   State<ScanPage> createState() => _ScanPageState();
 }
 
-class _ScanPageState extends State<ScanPage> {
+class _ScanPageState extends State<ScanPage> with TickerProviderStateMixin {
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
   bool _isFlashOn = false;
   bool _isBarcodeMode = false;
-  File? _imageFile;
   final ImagePicker _picker = ImagePicker();
   MobileScannerController? _barcodeController;
+
+  // Animation controllers
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late AnimationController _pulseController;
+  late AnimationController _scanController;
 
   @override
   void initState() {
     super.initState();
+    _initializeAnimations();
     _requestAllPermissions();
+  }
+
+  void _initializeAnimations() {
+    _fadeController = AnimationController(
+      duration: AppAnimations.medium,
+      vsync: this,
+    );
+    _slideController = AnimationController(
+      duration: AppAnimations.medium,
+      vsync: this,
+    );
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    _scanController = AnimationController(
+      duration: const Duration(milliseconds: 3000),
+      vsync: this,
+    );
+  }
+
+  void _startAnimations() {
+    _fadeController.forward();
+    _slideController.forward();
+    if (_isBarcodeMode) {
+      _scanController.repeat();
+    }
   }
 
   Future<void> _requestAllPermissions() async {
@@ -39,11 +75,12 @@ class _ScanPageState extends State<ScanPage> {
     if (!mounted) return;
     if (cameraGranted) {
       await _initCamera();
+      _startAnimations();
     } else {
-      _showMessage('Camera permission denied');
+      _showEnhancedMessage('Camera permission denied', isError: true);
     }
     if (!galleryGranted) {
-      _showMessage('Gallery permission denied');
+      _showEnhancedMessage('Gallery permission denied', isError: true);
     }
   }
 
@@ -92,36 +129,71 @@ class _ScanPageState extends State<ScanPage> {
 
   Future<void> _captureImage() async {
     if (!_isCameraInitialized || _cameraController == null) return;
+
+    HapticFeedback.mediumImpact();
+    _pulseController.forward().then((_) => _pulseController.reverse());
     final file = await _cameraController!.takePicture();
-    setState(() {
-      _imageFile = File(file.path);
-    });
+
     if (!mounted) return;
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ViewImagePage(imagePath: file.path)),
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) =>
+                ViewImagePage(imagePath: file.path),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            ),
+            child: child,
+          );
+        },
+      ),
     );
   }
 
   Future<void> _pickFromGallery() async {
+    HapticFeedback.lightImpact();
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
       Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ViewImagePage(imagePath: pickedFile.path),
+        PageRouteBuilder(
+          pageBuilder:
+              (context, animation, secondaryAnimation) =>
+                  ViewImagePage(imagePath: pickedFile.path),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(1.0, 0.0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
+              child: child,
+            );
+          },
         ),
       );
     }
   }
 
   Future<void> _handleBarcodeScanned(String barcode) async {
+    HapticFeedback.heavyImpact();
+
+    // Show scanning feedback
+    _showEnhancedMessage('Barcode detected! Processing...', isSuccess: true);
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
       if (token == null) {
-        _showMessage('Token tidak ditemukan. Silakan login ulang.');
+        _showEnhancedMessage(
+          'Token not found. Please login again.',
+          isError: true,
+        );
         return;
       }
 
@@ -164,114 +236,314 @@ class _ScanPageState extends State<ScanPage> {
         if (!mounted) return;
 
         await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder:
-                (_) => ResultPage(
+          PageRouteBuilder(
+            pageBuilder:
+                (context, animation, secondaryAnimation) => ResultPage(
                   foodListText: mapped['nama_makanan'],
                   nutritionResult: [mapped],
                   imagePath: '',
                 ),
+            transitionsBuilder: (
+              context,
+              animation,
+              secondaryAnimation,
+              child,
+            ) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(1.0, 0.0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+                child: child,
+              );
+            },
           ),
         );
+
         if (isZeroNutrition) {
-          _showMessage(
-            'Nutrisi tidak ditemukan untuk produk ini. Data akan tetap disimpan, namun nilai nutrisi 0.',
+          _showEnhancedMessage(
+            'Nutrition not found for this product. Data will be saved with zero nutrition values.',
+            isWarning: true,
           );
         }
       } else if (response.statusCode == 401) {
-        _showMessage('Tidak terautentikasi. Silakan login kembali.');
+        _showEnhancedMessage(
+          'Unauthorized. Please login again.',
+          isError: true,
+        );
       } else {
-        _showMessage('Terjadi kesalahan: \\${response.statusCode}');
+        _showEnhancedMessage(
+          'Error occurred: ${response.statusCode}',
+          isError: true,
+        );
       }
     } catch (e) {
-      _showMessage('Gagal menghubungi server: $e');
+      _showEnhancedMessage('Failed to connect to server: $e', isError: true);
     }
   }
 
   Future<void> _toggleFlash() async {
     if (_cameraController == null) return;
+
+    HapticFeedback.lightImpact();
     _isFlashOn = !_isFlashOn;
     await _cameraController!.setFlashMode(
       _isFlashOn ? FlashMode.torch : FlashMode.off,
     );
     setState(() {});
+
+    _showEnhancedMessage(
+      _isFlashOn ? 'Flash turned on' : 'Flash turned off',
+      isSuccess: true,
+    );
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showEnhancedMessage(
+    String message, {
+    bool isError = false,
+    bool isSuccess = false,
+    bool isWarning = false,
+  }) {
+    Color backgroundColor;
+    IconData icon;
+
+    if (isError) {
+      backgroundColor = AppColors.error;
+      icon = Icons.error_rounded;
+    } else if (isSuccess) {
+      backgroundColor = AppColors.success;
+      icon = Icons.check_circle_rounded;
+    } else if (isWarning) {
+      backgroundColor = AppColors.warning;
+      icon = Icons.warning_rounded;
+    } else {
+      backgroundColor = AppColors.info;
+      icon = Icons.info_rounded;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: AppColors.white),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.md),
+        ),
+        margin: EdgeInsets.all(AppSpacing.md),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _cameraController?.dispose();
     _barcodeController?.dispose();
+    _fadeController.dispose();
+    _slideController.dispose();
+    _pulseController.dispose();
+    _scanController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
+        leading: Container(
+          margin: EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.black.withOpacity(0.3),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.white.withOpacity(0.2),
+              width: 1,
+            ),
           ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text('Scan', style: TextStyle(color: Colors.white)),
+          child: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: AppColors.white,
+              size: AppIcons.sm,
+            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
+          ),
+        ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.8, 0.8)),
+        title: Text(
+          'Smart Scanner',
+          style: AppTextStyles.h3.copyWith(
+            color: AppColors.white,
+            fontWeight: AppTexts.bold,
+          ),
+        ).animate().fadeIn(delay: 300.ms).slideY(begin: -0.3),
         centerTitle: true,
+        actions: [
+          Container(
+                margin: EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.help_outline_rounded,
+                    color: AppColors.white,
+                    size: AppIcons.sm,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _showHelpDialog();
+                  },
+                ),
+              )
+              .animate()
+              .fadeIn(delay: 400.ms)
+              .scale(begin: const Offset(0.8, 0.8)),
+        ],
       ),
       body:
           !_isCameraInitialized
-              ? const Center(child: CircularProgressIndicator())
-              : Stack(
-                children: [
-                  Positioned.fill(
-                    child:
-                        _isBarcodeMode
-                            ? MobileScanner(
-                              controller:
-                                  _barcodeController ??=
-                                      MobileScannerController(),
-                              onDetect: (capture) {
-                                final barcode = capture.barcodes.first.rawValue;
-                                if (barcode != null) {
-                                  _barcodeController?.stop();
-                                  _handleBarcodeScanned(barcode);
-                                }
-                              },
-                            )
-                            : CameraPreview(_cameraController!),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 48,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildModeSwitch(),
-                        const SizedBox(height: 32),
-                        _buildControlButtons(),
-                      ],
-                    ),
-                  ),
-                ],
+              ? _buildLoadingState()
+              : AnimatedBuilder(
+                animation: Listenable.merge([
+                  _fadeController,
+                  _slideController,
+                ]),
+                builder: (context, child) {
+                  return Stack(
+                    children: [
+                      // Camera/Scanner view
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.zero,
+                          child:
+                              _isBarcodeMode
+                                  ? Stack(
+                                    children: [
+                                      MobileScanner(
+                                        controller:
+                                            _barcodeController ??=
+                                                MobileScannerController(),
+                                        onDetect: (capture) {
+                                          final barcode =
+                                              capture.barcodes.first.rawValue;
+                                          if (barcode != null) {
+                                            _barcodeController?.stop();
+                                            _handleBarcodeScanned(barcode);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  )
+                                  : CameraPreview(_cameraController!),
+                        ),
+                      ),
+
+                      // Top gradient overlay
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 120,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                AppColors.black.withOpacity(0.7),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Bottom controls
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                AppColors.black.withOpacity(0.8),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                          child: SafeArea(
+                            child: Padding(
+                              padding: EdgeInsets.all(AppSpacing.lg),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _buildModeSwitch()
+                                      .animate()
+                                      .fadeIn(delay: 500.ms)
+                                      .slideY(begin: 0.5),
+                                  SizedBox(height: AppSpacing.xl),
+                                  _buildControlButtons()
+                                      .animate()
+                                      .fadeIn(delay: 600.ms)
+                                      .slideY(begin: 0.3),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Instructions overlay
+                      if (_isBarcodeMode)
+                        Positioned(
+                          top: MediaQuery.of(context).padding.top + 20,
+                          left: AppSpacing.lg,
+                          right: AppSpacing.lg,
+                          child: _buildInstructionsCard()
+                              .animate()
+                              .fadeIn(delay: 700.ms)
+                              .slideY(begin: -0.3),
+                        ),
+                    ],
+                  );
+                },
               ),
     );
   }
 
   Widget _buildModeSwitch() {
     return Container(
+      padding: EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        color: AppColors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+        boxShadow: AppShadows.card,
+        border: Border.all(color: AppColors.white.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -286,21 +558,50 @@ class _ScanPageState extends State<ScanPage> {
   Widget _buildModeButton(String label, bool isBarcode) {
     final isSelected = _isBarcodeMode == isBarcode;
     return GestureDetector(
-      onTap: () => setState(() => _isBarcodeMode = isBarcode),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() {
+          _isBarcodeMode = isBarcode;
+          if (_isBarcodeMode) {
+            _barcodeController?.start();
+            _scanController.repeat();
+          } else {
+            _barcodeController?.stop();
+            _scanController.stop();
+          }
+        });
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
+        duration: AppAnimations.medium,
+        curve: AppAnimations.easeInOut,
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+          boxShadow: isSelected ? AppShadows.primaryButton : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isBarcode
+                  ? Icons.qr_code_scanner_rounded
+                  : Icons.camera_alt_rounded,
+              color: isSelected ? AppColors.white : AppColors.textSecondary,
+              size: AppIcons.sm,
+            ),
+            SizedBox(width: AppSpacing.sm),
+            Text(
+              label,
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: isSelected ? AppColors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? AppTexts.semiBold : AppTexts.medium,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -308,38 +609,321 @@ class _ScanPageState extends State<ScanPage> {
 
   Widget _buildControlButtons() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        IconButton(
-          icon: const Icon(Icons.photo_library, color: Colors.white),
-          iconSize: 32,
-          onPressed: _pickFromGallery,
+        // Gallery button
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.white.withOpacity(0.15),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.white.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: IconButton(
+            icon: Icon(
+              Icons.photo_library_rounded,
+              color: AppColors.white,
+              size: AppIcons.lg,
+            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _pickFromGallery();
+            },
+          ),
         ),
-        const SizedBox(width: 32),
-        GestureDetector(
-          onTap: _isBarcodeMode ? null : _captureImage,
-          child: Container(
-            width: 64,
-            height: 64,
+
+        // Main capture/scan button
+        AnimatedBuilder(
+          animation: _pulseController,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: 1.0 + (_pulseController.value * 0.1),
+              child: GestureDetector(
+                onTap: _isBarcodeMode ? null : _captureImage,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color:
+                        _isBarcodeMode
+                            ? AppColors.white.withOpacity(0.3)
+                            : AppColors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.white, width: 3),
+                    boxShadow:
+                        _isBarcodeMode
+                            ? null
+                            : [
+                              BoxShadow(
+                                color: AppColors.white.withOpacity(0.3),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                  ),
+                  child: Icon(
+                    _isBarcodeMode
+                        ? Icons.qr_code_scanner_rounded
+                        : Icons.camera_alt_rounded,
+                    color:
+                        _isBarcodeMode
+                            ? AppColors.white.withOpacity(0.7)
+                            : AppColors.black,
+                    size: AppIcons.xl,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Flash button
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color:
+                _isFlashOn
+                    ? AppColors.primary.withOpacity(0.8)
+                    : AppColors.white.withOpacity(0.15),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color:
+                  _isFlashOn
+                      ? AppColors.primary
+                      : AppColors.white.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: IconButton(
+            icon: Icon(
+              _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+              color: AppColors.white,
+              size: AppIcons.lg,
+            ),
+            onPressed: _toggleFlash,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Container(
+      color: AppColors.black,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: AppColors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.white.withOpacity(0.2),
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
+                      strokeWidth: 3,
+                    ),
+                  ),
+                )
+                .animate(onPlay: (controller) => controller.repeat())
+                .rotate(duration: 2000.ms),
+
+            SizedBox(height: AppSpacing.xl),
+
+            Text(
+              'Initializing Camera',
+              style: AppTextStyles.h4.copyWith(color: AppColors.white),
+            ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.3),
+
+            SizedBox(height: AppSpacing.md),
+
+            Text(
+              'Please wait while we set up your camera',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.white.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.3),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstructionsCard() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+        boxShadow: AppShadows.lgCard,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: _isBarcodeMode ? Colors.grey : Colors.white,
+              color: AppColors.primary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              _isBarcodeMode ? Icons.qr_code_scanner : Icons.camera_alt,
-              color: _isBarcodeMode ? Colors.black54 : Colors.black,
-              size: 36,
+              Icons.qr_code_scanner_rounded,
+              color: AppColors.primary,
+              size: AppIcons.lg,
             ),
           ),
-        ),
-        const SizedBox(width: 32),
-        IconButton(
-          icon: Icon(
-            _isFlashOn ? Icons.flash_on : Icons.flash_off,
-            color: Colors.white,
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Scan Barcode',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: AppTexts.semiBold,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Point your camera at a product barcode to get nutrition information',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
           ),
-          iconSize: 32,
-          onPressed: _toggleFlash,
+        ],
+      ),
+    );
+  }
+
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              margin: EdgeInsets.all(AppSpacing.lg),
+              padding: EdgeInsets.all(AppSpacing.xl),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                boxShadow: AppShadows.floating,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.help_outline_rounded,
+                    color: AppColors.primary,
+                    size: AppIcons.xl,
+                  ),
+                  SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'How to Use Smart Scanner',
+                    style: AppTextStyles.h3,
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: AppSpacing.lg),
+                  _buildHelpItem(
+                    Icons.camera_alt_rounded,
+                    'Snap Mode',
+                    'Take photos of your food to get nutrition estimates using AI',
+                  ),
+                  SizedBox(height: AppSpacing.md),
+                  _buildHelpItem(
+                    Icons.qr_code_scanner_rounded,
+                    'Barcode Mode',
+                    'Scan product barcodes to get accurate nutrition information',
+                  ),
+                  SizedBox(height: AppSpacing.md),
+                  _buildHelpItem(
+                    Icons.photo_library_rounded,
+                    'Gallery',
+                    'Choose existing photos from your gallery to analyze',
+                  ),
+                  SizedBox(height: AppSpacing.xl),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.white,
+                            padding: EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppBorderRadius.md,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Got it!',
+                            style: AppTextStyles.buttonLarge,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  Widget _buildHelpItem(IconData icon, String title, String description) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.primarySurface,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: AppColors.primary, size: AppIcons.md),
+        ),
+        SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: AppTexts.semiBold,
+                ),
+              ),
+              SizedBox(height: AppSpacing.xs),
+              Text(
+                description,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

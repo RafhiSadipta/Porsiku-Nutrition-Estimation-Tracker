@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
@@ -6,24 +8,23 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porsiku/view/main/result.dart';
+import 'package:porsiku/constants/constants.dart';
 import 'dart:io';
 import 'package:http_parser/http_parser.dart';
 
 class AudioInputPage extends StatefulWidget {
   const AudioInputPage({super.key});
 
-  // Tambahkan static show() agar bisa dipanggil sebagai dialog overlay
   static Future<void> show(BuildContext context) async {
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.4),
-      builder:
-          (ctx) => const Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: EdgeInsets.all(0),
-            child: AudioInputPage(),
-          ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      enableDrag: true,
+      isDismissible: true,
+      builder: (BuildContext context) {
+        return const AudioInputPage();
+      },
     );
   }
 
@@ -31,7 +32,8 @@ class AudioInputPage extends StatefulWidget {
   State<AudioInputPage> createState() => _AudioInputPageState();
 }
 
-class _AudioInputPageState extends State<AudioInputPage> {
+class _AudioInputPageState extends State<AudioInputPage>
+    with TickerProviderStateMixin {
   FlutterSoundRecorder? _recorder;
   bool _isRecording = false;
   bool _isLoading = false;
@@ -39,30 +41,64 @@ class _AudioInputPageState extends State<AudioInputPage> {
   String? _transcript;
   String? _errorMsg;
 
+  late AnimationController _slideController;
+  late AnimationController _fadeController;
+  late AnimationController _pulseController;
+  late AnimationController _micController;
+
   @override
   void initState() {
     super.initState();
     _recorder = FlutterSoundRecorder();
+    _initializeAnimations();
     _initRecorder();
+    _startAnimations();
   }
 
-  Future<void> _initRecorder() async {
-    // Hanya cek permission microphone (storage tidak perlu di Android 13+)
-    final micStatus = await Permission.microphone.request();
-    if (!micStatus.isGranted) {
-      setState(() {
-        _errorMsg = 'Izin microphone diperlukan.';
-      });
-      return;
-    }
-    await _recorder!.openRecorder();
+  void _initializeAnimations() {
+    _slideController = AnimationController(
+      duration: AppAnimations.medium,
+      vsync: this,
+    );
+    _fadeController = AnimationController(
+      duration: AppAnimations.medium,
+      vsync: this,
+    );
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _micController = AnimationController(
+      duration: AppAnimations.fast,
+      vsync: this,
+    );
+  }
+
+  void _startAnimations() {
+    _slideController.forward();
+    _fadeController.forward();
   }
 
   @override
   void dispose() {
     _recorder?.closeRecorder();
     _recorder = null;
+    _slideController.dispose();
+    _fadeController.dispose();
+    _pulseController.dispose();
+    _micController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initRecorder() async {
+    final micStatus = await Permission.microphone.request();
+    if (!micStatus.isGranted) {
+      setState(() {
+        _errorMsg = 'Microphone permission is required.';
+      });
+      return;
+    }
+    await _recorder!.openRecorder();
   }
 
   Future<void> _startRecording() async {
@@ -70,41 +106,54 @@ class _AudioInputPageState extends State<AudioInputPage> {
       _errorMsg = null;
     });
     try {
+      HapticFeedback.mediumImpact();
+      _micController.forward().then((_) => _micController.reverse());
+
       final dir = await getTemporaryDirectory();
       final filePath =
           '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
       await _recorder!.startRecorder(toFile: filePath, codec: Codec.aacMP4);
+
       setState(() {
         _isRecording = true;
         _audioPath = filePath;
       });
+
+      // Start pulse animation when recording
+      _pulseController.repeat();
     } catch (e) {
+      HapticFeedback.heavyImpact();
       setState(() {
-        _errorMsg = 'Gagal mulai merekam: $e';
+        _errorMsg = 'Failed to start recording: $e';
       });
     }
   }
 
   Future<void> _stopRecording() async {
     try {
+      HapticFeedback.lightImpact();
+      _micController.forward().then((_) => _micController.reverse());
+      _pulseController.stop();
+
       await _recorder!.stopRecorder();
       setState(() {
         _isRecording = false;
       });
+
       if (_audioPath != null) {
-        // Cek file benar-benar ada sebelum proses
         final file = File(_audioPath!);
         if (!await file.exists()) {
           setState(() {
-            _errorMsg = 'File audio tidak ditemukan. Coba ulangi.';
+            _errorMsg = 'Audio file not found. Please try again.';
           });
           return;
         }
         await _processAudio(_audioPath!);
       }
     } catch (e) {
+      HapticFeedback.heavyImpact();
       setState(() {
-        _errorMsg = 'Gagal stop rekaman: $e';
+        _errorMsg = 'Failed to stop recording: $e';
       });
     }
   }
@@ -136,11 +185,11 @@ class _AudioInputPageState extends State<AudioInputPage> {
       final detectStreamed = await detectRequest.send();
       final detectResponse = await http.Response.fromStream(detectStreamed);
       if (detectResponse.statusCode != 200) {
-        throw Exception('Gagal deteksi audio: ${detectResponse.body}');
+        throw Exception('Failed to detect audio: ${detectResponse.body}');
       }
       final detectJson = jsonDecode(detectResponse.body);
       if (detectJson['type'] != 'audio' || detectJson['transkrip'] == null) {
-        throw Exception('Format hasil deteksi audio tidak valid');
+        throw Exception('Invalid audio detection format');
       }
       final transkrip = detectJson['transkrip'];
       setState(() {
@@ -158,7 +207,7 @@ class _AudioInputPageState extends State<AudioInputPage> {
         body: jsonEncode({'food_list': transkrip}),
       );
       if (nutriResponse.statusCode != 200) {
-        throw Exception('Estimasi nutrisi gagal: ${nutriResponse.body}');
+        throw Exception('Nutrition estimation failed: ${nutriResponse.body}');
       }
       // Ekstrak JSON array dari response (bisa dalam code block)
       String nutriBody = nutriResponse.body;
@@ -173,18 +222,21 @@ class _AudioInputPageState extends State<AudioInputPage> {
         var arrMatch = arr.firstMatch(nutriBody);
         if (arrMatch != null) jsonStr = arrMatch.group(1);
       }
-      if (jsonStr == null) throw Exception('Tidak bisa ekstrak hasil nutrisi');
+      if (jsonStr == null)
+        throw Exception('Could not extract nutrition results');
       var nutritionResult = jsonDecode(jsonStr);
       if (nutritionResult == null || nutritionResult is! List) {
-        throw Exception('Format hasil estimasi tidak valid');
+        throw Exception('Invalid nutrition estimation format');
       }
       if (nutritionResult.isEmpty) {
         setState(() {
-          _errorMsg = 'Tidak ada makanan terdeteksi.';
+          _errorMsg = 'No food items detected in the audio.';
           _isLoading = false;
         });
         return;
       }
+      // Success feedback
+      HapticFeedback.heavyImpact();
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder:
@@ -196,8 +248,9 @@ class _AudioInputPageState extends State<AudioInputPage> {
         ),
       );
     } catch (e) {
+      HapticFeedback.heavyImpact();
       setState(() {
-        _errorMsg = 'Gagal proses audio: $e';
+        _errorMsg = 'Failed to process audio: $e';
       });
     } finally {
       setState(() {
@@ -208,67 +261,383 @@ class _AudioInputPageState extends State<AudioInputPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Ganti Scaffold dengan Material transparan agar overlay
-    return Material(
-      color: Colors.transparent,
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 40),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Tekan tombol mic dan sebutkan makanan yang dikonsumsi',
-                style: TextStyle(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
+    return AnimatedBuilder(
+      animation: Listenable.merge([_slideController, _fadeController]),
+      builder: (context, child) {
+        return Container(
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppBorderRadius.xl),
+                ),
+                boxShadow: AppShadows.floating,
               ),
-              const SizedBox(height: 16),
-              if (_transcript != null)
-                Column(
-                  children: [
-                    const Text(
-                      'Transkrip:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle bar
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightGrey,
+                      borderRadius: BorderRadius.circular(AppBorderRadius.sm),
                     ),
-                    Text(_transcript!, textAlign: TextAlign.center),
-                    const SizedBox(height: 8),
-                  ],
-                ),
-              if (_errorMsg != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    _errorMsg!,
-                    style: const TextStyle(color: Colors.red),
+                  ).animate().scale(
+                    duration: AppAnimations.medium,
+                    curve: Curves.elasticOut,
                   ),
-                ),
-              IconButton(
-                iconSize: 64,
-                icon: Icon(
-                  _isRecording ? Icons.stop_circle : Icons.mic,
-                  color: Colors.black,
-                ),
-                onPressed:
-                    _isLoading
-                        ? null
-                        : _isRecording
-                        ? _stopRecording
-                        : _startRecording,
+
+                  // Header section
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Row(
+                      children: [
+                        // Icon container
+                        Container(
+                              padding: EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.success.withOpacity(0.1),
+                                    AppColors.success.withOpacity(0.05),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  AppBorderRadius.md,
+                                ),
+                                border: Border.all(
+                                  color: AppColors.success.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.mic_rounded,
+                                color: AppColors.success,
+                                size: AppIcons.md,
+                              ),
+                            )
+                            .animate()
+                            .scale(
+                              duration: AppAnimations.medium,
+                              curve: Curves.elasticOut,
+                            )
+                            .fadeIn(),
+
+                        SizedBox(width: AppSpacing.md),
+
+                        // Title and subtitle
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                    'Voice Input',
+                                    style: AppTextStyles.h3.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: AppTexts.bold,
+                                    ),
+                                  )
+                                  .animate()
+                                  .fadeIn(delay: 100.ms)
+                                  .slideX(
+                                    begin: -0.3,
+                                    duration: AppAnimations.medium,
+                                    curve: Curves.easeOutCubic,
+                                  ),
+                              Text(
+                                    'Speak about what you ate today',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  )
+                                  .animate()
+                                  .fadeIn(delay: 200.ms)
+                                  .slideX(
+                                    begin: -0.3,
+                                    duration: AppAnimations.medium,
+                                    curve: Curves.easeOutCubic,
+                                  ),
+                            ],
+                          ),
+                        ),
+
+                        // Close button
+                        IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: AppColors.textSecondary,
+                              ),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.lightGrey
+                                    .withOpacity(0.1),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppBorderRadius.sm,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .animate()
+                            .fadeIn(delay: 300.ms)
+                            .scale(begin: const Offset(0.8, 0.8)),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: AppSpacing.xl),
+
+                  // Main content section
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Column(
+                      children: [
+                        // Status messages
+                        if (_transcript != null)
+                          Container(
+                            padding: EdgeInsets.all(AppSpacing.md),
+                            margin: EdgeInsets.only(bottom: AppSpacing.lg),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(
+                                AppBorderRadius.md,
+                              ),
+                              border: Border.all(
+                                color: AppColors.success.withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      color: AppColors.success,
+                                      size: AppIcons.sm,
+                                    ),
+                                    SizedBox(width: AppSpacing.sm),
+                                    Text(
+                                      'Transcript:',
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.success,
+                                        fontWeight: AppTexts.semiBold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  _transcript!,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn().slideY(begin: -0.3),
+
+                        if (_errorMsg != null)
+                          Container(
+                            padding: EdgeInsets.all(AppSpacing.md),
+                            margin: EdgeInsets.only(bottom: AppSpacing.lg),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(
+                                AppBorderRadius.md,
+                              ),
+                              border: Border.all(
+                                color: AppColors.error.withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.error_rounded,
+                                  color: AppColors.error,
+                                  size: AppIcons.sm,
+                                ),
+                                SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    _errorMsg!,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn().slideY(begin: -0.3),
+
+                        // Microphone button
+                        AnimatedBuilder(
+                              animation: _pulseController,
+                              builder: (context, child) {
+                                return AnimatedBuilder(
+                                  animation: _micController,
+                                  builder: (context, child) {
+                                    return Transform.scale(
+                                      scale: 1.0 + (_micController.value * 0.1),
+                                      child: Container(
+                                        width: 120,
+                                        height: 120,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: RadialGradient(
+                                            colors: [
+                                              _isRecording
+                                                  ? AppColors.error.withOpacity(
+                                                    0.2,
+                                                  )
+                                                  : AppColors.success
+                                                      .withOpacity(0.2),
+                                              _isRecording
+                                                  ? AppColors.error.withOpacity(
+                                                    0.1,
+                                                  )
+                                                  : AppColors.success
+                                                      .withOpacity(0.1),
+                                              Colors.transparent,
+                                            ],
+                                            stops: [
+                                              0.3 +
+                                                  (_pulseController.value *
+                                                      0.2),
+                                              0.6 +
+                                                  (_pulseController.value *
+                                                      0.3),
+                                              1.0,
+                                            ],
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  _isRecording
+                                                      ? AppColors.error
+                                                          .withOpacity(0.3)
+                                                      : AppColors.success
+                                                          .withOpacity(0.3),
+                                              blurRadius: 20,
+                                              spreadRadius:
+                                                  _isRecording ? 5 : 0,
+                                            ),
+                                          ],
+                                        ),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap:
+                                                _isLoading
+                                                    ? null
+                                                    : _isRecording
+                                                    ? _stopRecording
+                                                    : _startRecording,
+                                            borderRadius: BorderRadius.circular(
+                                              60,
+                                            ),
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color:
+                                                    _isRecording
+                                                        ? AppColors.error
+                                                        : AppColors.success,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: AppColors.black
+                                                        .withOpacity(0.2),
+                                                    blurRadius: 10,
+                                                    offset: const Offset(0, 4),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                _isRecording
+                                                    ? Icons.stop_rounded
+                                                    : Icons.mic_rounded,
+                                                color: AppColors.white,
+                                                size: 48,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            )
+                            .animate()
+                            .fadeIn(delay: 400.ms)
+                            .scale(
+                              begin: const Offset(0.8, 0.8),
+                              duration: AppAnimations.medium,
+                              curve: Curves.elasticOut,
+                            ),
+
+                        SizedBox(height: AppSpacing.lg),
+
+                        // Instructions or loading
+                        if (_isLoading)
+                          Column(
+                            children: [
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.success,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: AppSpacing.md),
+                              Text(
+                                'Processing your voice...',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ).animate().fadeIn()
+                        else
+                          Column(
+                            children: [
+                              Text(
+                                _isRecording
+                                    ? 'Listening... Tap to stop'
+                                    : 'Tap the microphone and speak',
+                                style: AppTextStyles.bodyLarge.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: AppTexts.semiBold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ).animate().fadeIn(delay: 500.ms),
+                            ],
+                          ),
+
+                        SizedBox(height: AppSpacing.xl),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 16),
-                  child: CircularProgressIndicator(),
-                ),
-            ],
-          ),
-        ),
-      ),
+            )
+            .animate()
+            .slideY(
+              begin: 1.0,
+              duration: AppAnimations.medium,
+              curve: Curves.easeOutCubic,
+            )
+            .fadeIn(duration: AppAnimations.medium);
+      },
     );
   }
 }
