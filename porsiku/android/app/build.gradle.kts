@@ -28,23 +28,13 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-    }    
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
-        }
-    }
-
-    // Custom APK naming
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-            if (output is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
-                val versionName = variant.versionName
-                val buildType = variant.buildType.name
-                output.outputFileName = "PorsiKu-${versionName}-${buildType}.apk"
-            }
         }
     }
 }
