@@ -25,6 +25,8 @@ func SetupRoutes() *gin.Engine {
 		api.GET("/user", controllers.GetUsers)
 		api.GET("/user/:id", controllers.GetUserById)
 		api.PUT("/user/:id", controllers.UpdateUser)
+		api.PUT("/user/username/:id", controllers.UpdateUsername)
+		api.PUT("/user/password/:id", controllers.UpdatePassword)
 		api.DELETE("/user/:id", controllers.DeleteUser)
 		api.GET("/daily_target", controllers.GetDailyTarget)
 		api.GET("/daily_target/:id", controllers.GetDailyTargetByUserId)

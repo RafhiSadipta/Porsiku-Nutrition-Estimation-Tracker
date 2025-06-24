@@ -6,6 +6,7 @@ import (
 	"backend/config"
 	"backend/helpers"
 	"backend/models"
+	"backend/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -77,6 +78,79 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User berhasil diupdate", "data": user})
+}
+
+func UpdateUsername(c *gin.Context) {
+	id := c.Param("id")
+	var user models.Users
+
+	if err := config.DB.First(&user, "id = ? AND soft_deleted = ?", id, false).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
+		return
+	}
+
+	var request struct {
+		Username string `json:"username"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Request tidak valid"})
+		return
+	}
+
+	user.Username = request.Username
+
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate username"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Username berhasil diperbarui",
+		"data":    user.Username,
+	})
+}
+
+func UpdatePassword(c *gin.Context) {
+	id := c.Param("id")
+	var user models.Users
+
+	if err := config.DB.First(&user, "id = ? AND soft_deleted = ?", id, false).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
+		return
+	}
+
+	var request struct {
+		PassOld string `json:"password"`
+		PassNew string `json:"password_baru"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Request tidak valid"})
+		return
+	}
+
+	if !utils.CheckPasswordHash(request.PassOld, user.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password lama salah"})
+		return
+	}
+
+	hashedPassword, err := utils.HashPassword(request.PassNew)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal hash password"})
+		return
+	}
+
+	user.Password = hashedPassword
+
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate password"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Password berhasil diperbarui",
+	})
 }
 
 func DeleteUser(c *gin.Context) {

@@ -245,7 +245,7 @@ func GetSavedKonsumsiByUser(c *gin.Context) {
 	userID := c.Param("id_user")
 	var savedKonsumsi []models.Konsumsi
 
-	if err := config.DB.Preload("NutritionItems").Where("id_user = ? AND is_saved = ? AND soft_deleted = ?", userID, true, false).Find(&savedKonsumsi).Error; err != nil {
+	if err := config.DB.Preload("NutritionItems").Where("id_user = ? AND is_saved = ?", userID, true).Find(&savedKonsumsi).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data konsumsi tersimpan"})
 		return
 	}
