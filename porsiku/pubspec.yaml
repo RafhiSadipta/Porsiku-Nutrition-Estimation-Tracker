@@ -37,10 +37,6 @@ dependencies:
   # Jika ingin pakai dari pub.dev:
   # record: ^4.0.0
 
-  # Jika ingin pakai versi lokal yang sudah kamu modifikasi:
-  record:
-    path: ./record_fix
-
   path_provider: ^2.1.5
   flutter_sound: ^9.28.0
 
