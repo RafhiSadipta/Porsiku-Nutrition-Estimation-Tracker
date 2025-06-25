@@ -22,6 +22,7 @@ import 'package:porsiku/view/main/textinput.dart';
 import 'package:porsiku/view/main/audioinput.dart';
 import 'package:porsiku/view/main/result.dart';
 import 'package:porsiku/components/saved_meal_bottom_sheet.dart';
+import 'package:flutter/services.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -640,23 +641,55 @@ class _DashboardPageState extends State<DashboardPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            _buildDashboardContent(),
-            const RecipePage(),
-            Container(), // This corresponds to index 2, which is 'Add'
-            const AnalyticsPage(),
-            const MorePage(),
-          ],
+    return WillPopScope(
+      onWillPop: () async {
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Keluar Aplikasi'),
+                content: const Text('Apakah Anda yakin ingin keluar aplikasi?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Batal'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                    ),
+                    child: const Text('Keluar'),
+                  ),
+                ],
+              ),
+        );
+        if (shouldExit == true) {
+          // Keluar aplikasi
+          SystemNavigator.pop();
+          return true;
+        }
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              _buildDashboardContent(),
+              const RecipePage(),
+              Container(), // This corresponds to index 2, which is 'Add'
+              const AnalyticsPage(),
+              const MorePage(),
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavbar(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onItemTapped,
+        bottomNavigationBar: CustomBottomNavbar(
+          selectedIndex: _selectedIndex,
+          onItemTapped: _onItemTapped,
+        ),
       ),
     );
   }
