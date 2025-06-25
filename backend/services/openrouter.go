@@ -23,7 +23,7 @@ type NutritionItem struct {
 
 func DetectFoodOpenRouter(base64Image string, prompt string) (string, error) {
 	payload := map[string]interface{}{
-		"model": "google/gemma-3-27b-it:free",
+		"model": "google/gemma-3-27b-it",
 		"messages": []map[string]interface{}{
 			{
 				"role": "user",
@@ -137,7 +137,7 @@ func CalculateNutrition(foodListText string, nutritionPrompt string) ([]Nutritio
 	prompt := fmt.Sprintf(nutritionPrompt, foodListText)
 
 	payload := map[string]interface{}{
-		"model": "google/gemma-3-27b-it:free",
+		"model": "google/gemma-3-27b-it",
 		"messages": []map[string]interface{}{
 			{
 				"role":    "user",
