@@ -576,16 +576,16 @@ class _FilterRecipeBottomSheetState extends State<FilterRecipeBottomSheet>
     if (selectedCookTime.isNotEmpty) {
       int? maxReadyTime;
       switch (selectedCookTime) {
-        case 'Under 15 min':
+        case "Under 15'":
           maxReadyTime = 15;
           break;
-        case 'Under 30 min':
+        case "Under 30'":
           maxReadyTime = 30;
           break;
-        case 'Under 60 min':
+        case "Under 60'":
           maxReadyTime = 60;
           break;
-        case 'Over 60 min':
+        case "Over 60'":
           maxReadyTime = 600;
           break;
       }
