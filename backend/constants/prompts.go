@@ -22,6 +22,7 @@ Berikut ini adalah daftar makanan beserta jumlahnya:
 
 Tugasmu:
 - Tentukan nilai nutrisi standar untuk **satu** unit makanan (kalori, protein, lemak, karbohidrat).
+- Jika tidak ditemukan makanan valid, tampilkan: "Unknown food"
 - Kalikan nilai nutrisi tersebut dengan jumlah makanan yang disebutkan.
 - Format hasil dalam bentuk array JSON.
 - Setiap item dalam array berisi:
@@ -31,7 +32,6 @@ Tugasmu:
   - protein (g) (number)
   - lemak (g) (number)
   - karbohidrat (g) (number)
-
 
 Contoh format:
 [

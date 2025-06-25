@@ -235,6 +235,33 @@ class _AudioInputPageState extends State<AudioInputPage>
         });
         return;
       }
+      bool allUnknown = nutritionResult.every(
+        (item) =>
+            item is Map<String, dynamic> &&
+            (item['nama_makanan'] as String?)?.toLowerCase() == 'unknown food',
+      );
+      if (allUnknown) {
+        if (!mounted) return;
+        await showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text("Tidak ada makanan yang terdeteksi"),
+                content: const Text(
+                  "Silakan foto ulang makananmu untuk hasil yang lebih akurat.",
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // tutup dialog
+                    },
+                    child: const Text("Rekam Ulang"),
+                  ),
+                ],
+              ),
+        );
+        return;
+      }
       // Success feedback
       HapticFeedback.heavyImpact();
       Navigator.of(context).pushReplacement(

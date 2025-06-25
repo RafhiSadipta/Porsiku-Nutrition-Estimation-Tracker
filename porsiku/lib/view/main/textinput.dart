@@ -163,6 +163,33 @@ class _TextInputPageState extends State<TextInputPage>
           setState(() => isLoading = false);
           return;
         } // Success feedback
+        bool allUnknown = nutritionResult.every(
+          (item) =>
+              item is Map<String, dynamic> &&
+              (item['nama_makanan'] as String?)?.toLowerCase() ==
+                  'unknown food',
+        );
+        if (allUnknown) {
+          HapticFeedback.mediumImpact();
+          showDialog(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text("Tidak ada makanan yang terdeteksi"),
+                  content: const Text(
+                    "Silakan masukkan makanan yang valid atau coba lagi.",
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text("Input Ulang"),
+                    ),
+                  ],
+                ),
+          );
+          setState(() => isLoading = false);
+          return;
+        }
         HapticFeedback.heavyImpact();
 
         Navigator.of(context).pushReplacement(
