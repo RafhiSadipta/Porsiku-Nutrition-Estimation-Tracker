@@ -352,13 +352,13 @@ class _SavedMealBottomSheetState extends State<SavedMealBottomSheet> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.blue.withOpacity(0.1),
+                              color: AppColors.primary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
                               'Add',
                               style: TextStyle(
-                                color: AppColors.blue,
+                                color: AppColors.primary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),

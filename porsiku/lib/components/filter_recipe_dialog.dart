@@ -67,10 +67,10 @@ class _FilterRecipeBottomSheetState extends State<FilterRecipeBottomSheet>
 
   // Cook times with icons
   final List<Map<String, dynamic>> cookTimes = [
-    {'name': 'Under 15 min', 'icon': Icons.flash_on_rounded},
-    {'name': 'Under 30 min', 'icon': Icons.schedule_rounded},
-    {'name': 'Under 60 min', 'icon': Icons.access_time_rounded},
-    {'name': 'Over 60 min', 'icon': Icons.more_time_rounded},
+    {'name': "Under 15'", 'icon': Icons.flash_on_rounded},
+    {'name': "Under 30'", 'icon': Icons.schedule_rounded},
+    {'name': "Under 60'", 'icon': Icons.access_time_rounded},
+    {'name': "Over 60'", 'icon': Icons.more_time_rounded},
   ];
 
   @override
@@ -206,10 +206,13 @@ class _FilterRecipeBottomSheetState extends State<FilterRecipeBottomSheet>
                     ),
 
                 // Content
-                Expanded(                  child: FadeTransition(
+                Expanded(
+                  child: FadeTransition(
                     opacity: _fadeAnimation,
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.all(AppSpacing.md), // Reduced from lg to md
+                      padding: EdgeInsets.all(
+                        AppSpacing.md,
+                      ), // Reduced from lg to md
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -223,8 +226,9 @@ class _FilterRecipeBottomSheetState extends State<FilterRecipeBottomSheet>
                                 curve: Curves.easeOutCubic,
                               ),
 
-                          SizedBox(height: AppSpacing.lg), // Reduced from xl to lg
-
+                          SizedBox(
+                            height: AppSpacing.lg,
+                          ), // Reduced from xl to lg
                           // Meal Type Section
                           _buildMealTypeSection()
                               .animate()
@@ -235,8 +239,9 @@ class _FilterRecipeBottomSheetState extends State<FilterRecipeBottomSheet>
                                 curve: Curves.easeOutCubic,
                               ),
 
-                          SizedBox(height: AppSpacing.lg), // Reduced from xl to lg
-
+                          SizedBox(
+                            height: AppSpacing.lg,
+                          ), // Reduced from xl to lg
                           // Cook Time Section
                           _buildCookTimeSection()
                               .animate()
@@ -245,8 +250,10 @@ class _FilterRecipeBottomSheetState extends State<FilterRecipeBottomSheet>
                                 begin: 0.3,
                                 duration: 600.ms,
                                 curve: Curves.easeOutCubic,
-                              ),                          SizedBox(height: AppSpacing.lg), // Reduced from xl to lg
-
+                              ),
+                          SizedBox(
+                            height: AppSpacing.lg,
+                          ), // Reduced from xl to lg
                           // Nutrition Section
                           _buildNutritionSection()
                               .animate()
@@ -311,11 +318,11 @@ class _FilterRecipeBottomSheetState extends State<FilterRecipeBottomSheet>
                       });
                       HapticFeedback.lightImpact();
                     },
-                  );                }).toList(),
+                  );
+                }).toList(),
           ),
 
           SizedBox(height: AppSpacing.md), // Reduced from lg to md
-
           // Add custom ingredient
           Row(
             children: [
@@ -437,7 +444,8 @@ class _FilterRecipeBottomSheetState extends State<FilterRecipeBottomSheet>
       subtitle: 'Set your preferred nutrition values',
       icon: Icons.local_fire_department_rounded,
       child: Column(
-        children: [          _buildNutritionRange(
+        children: [
+          _buildNutritionRange(
             'Calories',
             _minCalories,
             _maxCalories,
@@ -476,6 +484,7 @@ class _FilterRecipeBottomSheetState extends State<FilterRecipeBottomSheet>
       ),
     );
   }
+
   Widget _buildFooter() {
     return Container(
       padding: EdgeInsets.all(AppSpacing.md), // Reduced from lg to md
@@ -676,9 +685,13 @@ class _SectionCard extends StatelessWidget {
                   gradient: AppGradients.primary,
                   borderRadius: BorderRadius.circular(AppBorderRadius.sm),
                 ),
-                child: Icon(icon, color: AppColors.white, size: 16), // Reduced from 18 to 16
+                child: Icon(
+                  icon,
+                  color: AppColors.white,
+                  size: 16,
+                ), // Reduced from 18 to 16
               ),
-              SizedBox(width: AppSpacing.sm), // Reduced from md to sm
+              SizedBox(width: AppSpacing.md), // Reduced from md to sm
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -695,7 +708,8 @@ class _SectionCard extends StatelessWidget {
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.textSecondary,
                       ),
-                    ),                  ],
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -766,10 +780,13 @@ class _FilterChipState extends State<_FilterChip>
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                selected: widget.isSelected,                onSelected: (selected) {
+                selected: widget.isSelected,
+                onSelected: (selected) {
                   widget.onSelected(selected);
                 },
-                backgroundColor: AppColors.white, // Changed from AppColors.lightGrey.withOpacity(0.3) to white
+                backgroundColor:
+                    AppColors
+                        .white, // Changed from AppColors.lightGrey.withOpacity(0.3) to white
                 selectedColor: AppColors.primary,
                 checkmarkColor: AppColors.white,
                 shape: RoundedRectangleBorder(
@@ -822,9 +839,12 @@ class _TextField extends StatefulWidget {
 }
 
 class _TextFieldState extends State<_TextField> {
-  bool _isFocused = false;  @override
-  Widget build(BuildContext context) {    return Container(
-      height: 48, // Increased from 44 to 48 for better vertical centering with suffixText
+  bool _isFocused = false;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height:
+          48, // Increased from 44 to 48 for better vertical centering with suffixText
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(AppBorderRadius.md),
@@ -842,7 +862,8 @@ class _TextFieldState extends State<_TextField> {
                   ),
                 ]
                 : [],
-      ),      child: TextField(
+      ),
+      child: TextField(
         controller: widget.controller,
         keyboardType: widget.keyboardType,
         textAlignVertical: TextAlignVertical.center,
@@ -875,7 +896,9 @@ class _TextFieldState extends State<_TextField> {
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm, // Changed back to AppSpacing.sm for better alignment with suffixText
+            vertical:
+                AppSpacing
+                    .sm, // Changed back to AppSpacing.sm for better alignment with suffixText
           ),
           isDense: false, // Changed to false to allow proper vertical centering
         ),
@@ -1384,7 +1407,11 @@ Widget _buildNutritionRange(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xs),
                 border: Border.all(color: color.withOpacity(0.2), width: 1),
               ),
-              child: Icon(icon, color: color, size: 14), // Reduced from 16 to 14
+              child: Icon(
+                icon,
+                color: color,
+                size: 14,
+              ), // Reduced from 16 to 14
             ),
             SizedBox(width: AppSpacing.xs), // Reduced from sm to xs
             Text(
@@ -1408,7 +1435,9 @@ Widget _buildNutritionRange(
               ),
             ),
             Container(
-              margin: EdgeInsets.symmetric(horizontal: AppSpacing.xs), // Reduced from sm to xs
+              margin: EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+              ), // Reduced from sm to xs
               padding: EdgeInsets.all(4), // Reduced from 6 to 4
               decoration: BoxDecoration(
                 color: AppColors.textSecondary.withOpacity(0.1),

@@ -79,9 +79,6 @@ class _ScanPageState extends State<ScanPage> with TickerProviderStateMixin {
     } else {
       _showEnhancedMessage('Camera permission denied', isError: true);
     }
-    if (!galleryGranted) {
-      _showEnhancedMessage('Gallery permission denied', isError: true);
-    }
   }
 
   Future<bool> _requestCameraPermission() async {
@@ -296,11 +293,6 @@ class _ScanPageState extends State<ScanPage> with TickerProviderStateMixin {
       _isFlashOn ? FlashMode.torch : FlashMode.off,
     );
     setState(() {});
-
-    _showEnhancedMessage(
-      _isFlashOn ? 'Flash turned on' : 'Flash turned off',
-      isSuccess: true,
-    );
   }
 
   void _showEnhancedMessage(
