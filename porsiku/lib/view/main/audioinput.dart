@@ -9,6 +9,7 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porsiku/view/main/result.dart';
 import 'package:porsiku/constants/constants.dart';
+import 'package:porsiku/components/premium_dialog.dart';
 import 'dart:io';
 import 'package:http_parser/http_parser.dart';
 
@@ -242,23 +243,9 @@ class _AudioInputPageState extends State<AudioInputPage>
       );
       if (allUnknown) {
         if (!mounted) return;
-        await showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text("Tidak ada makanan yang terdeteksi"),
-                content: const Text(
-                  "Silakan foto ulang makananmu untuk hasil yang lebih akurat.",
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // tutup dialog
-                    },
-                    child: const Text("Rekam Ulang"),
-                  ),
-                ],
-              ),
+        await PremiumDialog.showNoFoodDetected(
+          context,
+          retryText: "Rekam Ulang",
         );
         return;
       }
@@ -271,6 +258,7 @@ class _AudioInputPageState extends State<AudioInputPage>
                 foodListText: transkrip,
                 nutritionResult: nutritionResult,
                 imagePath: _audioPath ?? '',
+                autoLog: false, // Disable auto-logging for immediate display
               ),
         ),
       );

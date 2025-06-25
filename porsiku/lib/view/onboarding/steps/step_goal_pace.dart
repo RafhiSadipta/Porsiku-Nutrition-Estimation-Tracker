@@ -59,7 +59,7 @@ class StepGoalPace extends StatelessWidget {
           TitleText(text: 'Seberapa cepat kamu ingin mencapai tujuan?'),
           SizedBox(height: AppSpacing.xs),
           SubtitleText(text: 'Pilih kecepatan perubahan berat badan'),
-          SizedBox(height: AppSpacing.xxl),
+          SizedBox(height: AppSpacing.md),
 
           // Pace options in scrollable list
           Expanded(

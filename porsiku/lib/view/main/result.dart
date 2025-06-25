@@ -11,10 +11,9 @@ class ResultPage extends StatefulWidget {
   final String foodListText;
   final List nutritionResult;
   final String imagePath;
-  final String?
-  existingKonsumsiId; // ID konsumsi yang sudah ada (untuk view/edit mode)
-  final bool
-  isViewMode; // true jika membuka untuk view/edit, false untuk create baru
+  final String? existingKonsumsiId;
+  final bool isViewMode;
+  final bool autoLog; // New parameter to control auto-logging
 
   const ResultPage({
     super.key,
@@ -22,7 +21,8 @@ class ResultPage extends StatefulWidget {
     required this.nutritionResult,
     required this.imagePath,
     this.existingKonsumsiId,
-    this.isViewMode = false, // default false untuk backward compatibility
+    this.isViewMode = false,
+    this.autoLog = true, // Default true for backward compatibility
   });
 
   @override
@@ -2363,7 +2363,10 @@ class _PremiumNutritionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(AppSpacing.md), // Reduced from lg to md
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ), // Reduced from lg to md
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [gradient[0].withOpacity(0.1), gradient[1].withOpacity(0.05)],
@@ -2422,7 +2425,6 @@ class _PremiumNutritionCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 2), // Reduced spacing
                 // Label
                 Text(
                   label,

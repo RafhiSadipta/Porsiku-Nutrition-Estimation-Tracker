@@ -87,13 +87,6 @@ class _CaloriesProgressIndicatorState extends State<CaloriesProgressIndicator>
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        widget.targetCalories > 0
-            ? (widget.currentCalories / widget.targetCalories)
-            : 0.0;
-
-    final isOverTarget = progress > 1.0;
-
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
@@ -212,21 +205,6 @@ class _CaloriesProgressIndicatorState extends State<CaloriesProgressIndicator>
                       curve: Curves.elasticOut,
                     )
                     .fadeIn(duration: 600.ms, delay: 200.ms),
-
-                // Progress percentage at bottom
-                if (isOverTarget) ...[
-                  SizedBox(height: AppSpacing.sm),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppBorderRadius.sm),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

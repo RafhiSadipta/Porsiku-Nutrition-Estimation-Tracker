@@ -308,41 +308,54 @@ class _RecipePageState extends State<RecipePage> {
                               .slideY(begin: 0.3, duration: 400.ms),
 
                           SizedBox(height: AppSpacing.sm),
-                        ],                        //  grid
+                        ], //  grid
                         Expanded(
                           child:
                               recipes.isEmpty
                                   ? _buildEmptyState()
                                   : SingleChildScrollView(
-                                      controller: _scrollController,
-                                      physics: const AlwaysScrollableScrollPhysics(),
-                                      padding: EdgeInsets.zero,
-                                      child: LayoutBuilder(
-                                        builder: (context, constraints) {
-                                          // Calculate how many columns can fit
-                                          const double cardMinWidth = 160;
-                                          const double spacing = 12;
-                                          final int crossAxisCount = ((constraints.maxWidth + spacing) / (cardMinWidth + spacing)).floor().clamp(2, 4);
-                                          final double cardWidth = (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
-                                          
-                                          return Wrap(
-                                            spacing: spacing,
-                                            runSpacing: spacing,
-                                            children: recipes.asMap().entries.map((entry) {
-                                              final int index = entry.key;
-                                              final Map<String, dynamic> recipe = entry.value;
-                                              return SizedBox(
-                                                width: cardWidth,
-                                                child: RecipeCard(
-                                                  recipe: recipe,
-                                                  index: index,
-                                                ),
-                                              );
-                                            }).toList(),
-                                          );
-                                        },
-                                      ),
+                                    controller: _scrollController,
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    padding: EdgeInsets.zero,
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        // Calculate how many columns can fit
+                                        const double cardMinWidth = 160;
+                                        const double spacing = 12;
+                                        final int crossAxisCount =
+                                            ((constraints.maxWidth + spacing) /
+                                                    (cardMinWidth + spacing))
+                                                .floor()
+                                                .clamp(2, 4);
+                                        final double cardWidth =
+                                            (constraints.maxWidth -
+                                                (spacing *
+                                                    (crossAxisCount - 1))) /
+                                            crossAxisCount;
+
+                                        return Wrap(
+                                          spacing: spacing,
+                                          runSpacing: spacing,
+                                          children:
+                                              recipes.asMap().entries.map((
+                                                entry,
+                                              ) {
+                                                final int index = entry.key;
+                                                final Map<String, dynamic>
+                                                recipe = entry.value;
+                                                return SizedBox(
+                                                  width: cardWidth,
+                                                  child: RecipeCard(
+                                                    recipe: recipe,
+                                                    index: index,
+                                                  ),
+                                                );
+                                              }).toList(),
+                                        );
+                                      },
                                     ),
+                                  ),
                         ),
 
                         // Loading more indicator
@@ -403,16 +416,23 @@ class _RecipePageState extends State<RecipePage> {
         ),
       ),
     );
-  }  Widget _buildLoadingState() {
+  }
+
+  Widget _buildLoadingState() {
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
       child: LayoutBuilder(
         builder: (context, constraints) {
           const double cardMinWidth = 160;
           const double spacing = 12;
-          final int crossAxisCount = ((constraints.maxWidth + spacing) / (cardMinWidth + spacing)).floor().clamp(2, 4);
-          final double cardWidth = (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
-          
+          final int crossAxisCount = ((constraints.maxWidth + spacing) /
+                  (cardMinWidth + spacing))
+              .floor()
+              .clamp(2, 4);
+          final double cardWidth =
+              (constraints.maxWidth - (spacing * (crossAxisCount - 1))) /
+              crossAxisCount;
+
           return Wrap(
             spacing: spacing,
             runSpacing: spacing,
@@ -421,16 +441,16 @@ class _RecipePageState extends State<RecipePage> {
                 width: cardWidth,
                 height: 240, // Fixed height for loading placeholders
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.lightGrey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-                  ),
-                )
-                .animate(onPlay: (controller) => controller.repeat())
-                .shimmer(
-                  duration: const Duration(seconds: 2),
-                  color: AppColors.white.withOpacity(0.8),
-                ),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightGrey.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                      ),
+                    )
+                    .animate(onPlay: (controller) => controller.repeat())
+                    .shimmer(
+                      duration: const Duration(seconds: 2),
+                      color: AppColors.white.withOpacity(0.8),
+                    ),
               );
             }),
           );
@@ -570,17 +590,17 @@ class _SearchBar extends StatefulWidget {
 class _SearchBarState extends State<_SearchBar>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
+  late Animation<double> _borderAnimation;
   bool _isFocused = false;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+    _borderAnimation = Tween<double>(begin: 1.0, end: 2.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
@@ -594,95 +614,110 @@ class _SearchBarState extends State<_SearchBar>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _scaleAnimation,
+      animation: _borderAnimation,
       builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-              border: Border.all(
-                color: _isFocused ? AppColors.primary : AppColors.lightGrey,
-                width: 1.5,
-              ),
-              boxShadow:
+        return Container(
+          height: AppSpacing.xxl,
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+            border: Border.all(
+              color:
                   _isFocused
-                      ? [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.1),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                      : AppShadows.card,
+                      ? AppColors.primary
+                      : AppColors.darkGrey.withOpacity(0.3),
+              width: _borderAnimation.value,
             ),
-            child: Row(
-              children: [
-                SizedBox(width: AppSpacing.md),
-                Icon(
-                      Icons.search_rounded,
-                      color: _isFocused ? AppColors.primary : AppColors.grey,
-                      size: 22,
-                    )
-                    .animate(target: _isFocused ? 1 : 0)
-                    .scale(duration: 200.ms, curve: Curves.easeInOut),
-
-                SizedBox(width: AppSpacing.sm),
-
-                Expanded(                  child: TextField(
-                    controller: widget.controller,
-                    onChanged: (_) => widget.onChanged(),
-                    textAlignVertical: TextAlignVertical.center,
-                    onTap: () {
-                      setState(() => _isFocused = true);
-                      _animationController.forward();
-                      HapticFeedback.selectionClick();
-                    },
-                    onTapOutside: (_) {
-                      setState(() => _isFocused = false);
-                      _animationController.reverse();
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Search for delicious recipes...',
-                      hintStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        vertical: 0, // Changed from AppSpacing.sm to 0 for better vertical centering
-                      ),
-                    ),
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
+          ),
+          child: Row(
+            children: [
+              // Leading icon
+              Padding(
+                padding: EdgeInsets.only(left: AppSpacing.md),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: Icon(
+                    Icons.search_rounded,
+                    color:
+                        _isFocused
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                    size: AppTexts.lg,
                   ),
                 ),
+              ),
 
-                if (widget.controller.text.isNotEmpty)
-                  IconButton(
-                        onPressed: () {
-                          widget.controller.clear();
-                          widget.onChanged();
-                          HapticFeedback.lightImpact();
-                        },
-                        icon: Icon(
-                          Icons.clear_rounded,
-                          color: AppColors.textSecondary,
-                          size: 20,
+              SizedBox(width: AppSpacing.sm),
+
+              // Text field
+              Expanded(
+                child: TextField(
+                  controller: widget.controller,
+                  onChanged: (_) => widget.onChanged(),
+                  textAlignVertical: TextAlignVertical.center,
+                  onTap: () {
+                    setState(() => _isFocused = true);
+                    _animationController.forward();
+                    HapticFeedback.selectionClick();
+                  },
+                  onTapOutside: (_) {
+                    setState(() => _isFocused = false);
+                    _animationController.reverse();
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Cari resep favorit...',
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary.withOpacity(0.7),
+                      fontWeight: FontWeight.w400,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  cursorColor: AppColors.primary,
+                  cursorWidth: 2,
+                ),
+              ),
+
+              // Clear button
+              if (widget.controller.text.isNotEmpty)
+                Padding(
+                      padding: EdgeInsets.only(right: AppSpacing.xs),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            widget.controller.clear();
+                            widget.onChanged();
+                            HapticFeedback.lightImpact();
+                          },
+                          borderRadius: BorderRadius.circular(
+                            AppBorderRadius.sm,
+                          ),
+                          child: Container(
+                            padding: EdgeInsets.all(AppSpacing.xs),
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: AppColors.textSecondary,
+                              size: AppTexts.ml,
+                            ),
+                          ),
                         ),
-                        constraints: const BoxConstraints(),
-                        padding: EdgeInsets.zero,
-                      )
-                      .animate()
-                      .scale(duration: 200.ms, curve: Curves.elasticOut)
-                      .fadeIn(),
+                      ),
+                    )
+                    .animate()
+                    .scale(duration: 200.ms, curve: Curves.elasticOut)
+                    .fadeIn(duration: 150.ms),
 
-                SizedBox(width: AppSpacing.sm),
-              ],
-            ),
+              SizedBox(width: AppSpacing.sm),
+            ],
           ),
         );
       },
@@ -781,7 +816,8 @@ class _RecipeCardState extends State<RecipeCard>
                       transitionDuration: const Duration(milliseconds: 300),
                     ),
                   );
-                },                child: IntrinsicHeight(
+                },
+                child: IntrinsicHeight(
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.white,
@@ -801,154 +837,160 @@ class _RecipeCardState extends State<RecipeCard>
                         AspectRatio(
                           aspectRatio: 1.2, // Fixed aspect ratio for image only
                           child: Hero(
-                          tag:
-                              'recipe_image_${widget.recipe['id'] ?? widget.index}',
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(AppBorderRadius.lg),
-                              ),
-                              image: DecorationImage(
-                                image: NetworkImage(
-                                  widget.recipe['image'] ?? defaultImage(),
+                            tag:
+                                'recipe_image_${widget.recipe['id'] ?? widget.index}',
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(AppBorderRadius.lg),
                                 ),
-                                fit: BoxFit.cover,
+                                image: DecorationImage(
+                                  image: NetworkImage(
+                                    widget.recipe['image'] ?? defaultImage(),
+                                  ),
+                                  fit: BoxFit.cover,
+                                ),
                               ),
-                            ),
-                            child: Stack(
-                              children: [
-                                // Gradient overlay
-                                Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(AppBorderRadius.lg),
-                                    ),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.transparent,
-                                        AppColors.black.withOpacity(0.1),
-                                      ],
+                              child: Stack(
+                                children: [
+                                  // Gradient overlay
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(
+                                          AppBorderRadius.lg,
+                                        ),
+                                      ),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          AppColors.black.withOpacity(0.1),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
 
-                                // Time badge
-                                Positioned(
-                                      top: AppSpacing.sm,
-                                      left: AppSpacing.sm,
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: AppSpacing.sm,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.black.withOpacity(
-                                            0.7,
+                                  // Time badge
+                                  Positioned(
+                                        top: AppSpacing.sm,
+                                        left: AppSpacing.sm,
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: AppSpacing.sm,
+                                            vertical: 4,
                                           ),
-                                          borderRadius: BorderRadius.circular(
-                                            AppBorderRadius.xl,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.black.withOpacity(
+                                              0.7,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              AppBorderRadius.xl,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.access_time_rounded,
+                                                color: AppColors.white,
+                                                size: 14,
+                                              ),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                widget.recipe['readyInMinutes'] !=
+                                                        null
+                                                    ? '${widget.recipe['readyInMinutes']}m'
+                                                    : '-',
+                                                style: AppTextStyles.caption
+                                                    .copyWith(
+                                                      color: AppColors.white,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.access_time_rounded,
-                                              color: AppColors.white,
-                                              size: 14,
-                                            ),
-                                            SizedBox(width: 4),
-                                            Text(
-                                              widget.recipe['readyInMinutes'] !=
-                                                      null
-                                                  ? '${widget.recipe['readyInMinutes']}m'
-                                                  : '-',
-                                              style: AppTextStyles.caption
-                                                  .copyWith(
-                                                    color: AppColors.white,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                          ],
+                                      )
+                                      .animate()
+                                      .fadeIn(
+                                        delay: Duration(
+                                          milliseconds: widget.index * 100,
                                         ),
+                                      )
+                                      .scaleXY(
+                                        begin: 0.8,
+                                        duration: 400.ms,
+                                        curve: Curves.elasticOut,
                                       ),
-                                    )
-                                    .animate()
-                                    .fadeIn(
-                                      delay: Duration(
-                                        milliseconds: widget.index * 100,
-                                      ),
-                                    )
-                                    .scaleXY(
-                                      begin: 0.8,
-                                      duration: 400.ms,
-                                      curve: Curves.elasticOut,
-                                    ),
 
-                                // Bookmark button
-                                Positioned(
-                                      top: AppSpacing.sm,
-                                      right: AppSpacing.sm,
-                                      child: Container(
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.white.withOpacity(
-                                            0.9,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            AppBorderRadius.sm,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: AppColors.black
-                                                  .withOpacity(0.1),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
+                                  // Bookmark button
+                                  Positioned(
+                                        top: AppSpacing.sm,
+                                        right: AppSpacing.sm,
+                                        child: Container(
+                                          width: 32,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.white.withOpacity(
+                                              0.9,
                                             ),
-                                          ],
-                                        ),
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
                                             borderRadius: BorderRadius.circular(
                                               AppBorderRadius.sm,
                                             ),
-                                            onTap: () {
-                                              HapticFeedback.lightImpact();
-                                              // TODO: Implement bookmark functionality
-                                            },
-                                            child: Icon(
-                                              (widget.recipe['isBookmarked'] ==
-                                                      true)
-                                                  ? Icons.bookmark_rounded
-                                                  : Icons
-                                                      .bookmark_border_rounded,
-                                              color: AppColors.primary,
-                                              size: 18,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.black
+                                                    .withOpacity(0.1),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    AppBorderRadius.sm,
+                                                  ),
+                                              onTap: () {
+                                                HapticFeedback.lightImpact();
+                                                // TODO: Implement bookmark functionality
+                                              },
+                                              child: Icon(
+                                                (widget.recipe['isBookmarked'] ==
+                                                        true)
+                                                    ? Icons.bookmark_rounded
+                                                    : Icons
+                                                        .bookmark_border_rounded,
+                                                color: AppColors.primary,
+                                                size: 18,
+                                              ),
                                             ),
                                           ),
                                         ),
+                                      )
+                                      .animate()
+                                      .fadeIn(
+                                        delay: Duration(
+                                          milliseconds:
+                                              widget.index * 100 + 200,
+                                        ),
+                                      )
+                                      .scaleXY(
+                                        begin: 0.8,
+                                        duration: 400.ms,
+                                        curve: Curves.elasticOut,
                                       ),
-                                    )
-                                    .animate()
-                                    .fadeIn(
-                                      delay: Duration(
-                                        milliseconds: widget.index * 100 + 200,
-                                      ),
-                                    )
-                                    .scaleXY(
-                                      begin: 0.8,
-                                      duration: 400.ms,
-                                      curve: Curves.elasticOut,
-                                    ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),                        ), // Content section
+                        ), // Content section
                         Padding(
                           padding: EdgeInsets.all(AppSpacing.sm),
                           child: Column(
@@ -997,7 +1039,8 @@ class _RecipeCardState extends State<RecipeCard>
                                     color: AppColors.success,
                                     label:
                                         '${(widget.recipe['fat'] as num?)?.toInt() ?? 0}g',
-                                  ),                                ],
+                                  ),
+                                ],
                               ),
                             ],
                           ),

@@ -65,7 +65,7 @@ class StepActivityLevel extends StatelessWidget {
           TitleText(text: 'Seberapa aktif kamu?'),
           SizedBox(height: AppSpacing.xs),
           SubtitleText(text: 'Pilih tingkat aktivitas harianmu'),
-          SizedBox(height: AppSpacing.xl),
+          SizedBox(height: AppSpacing.md),
 
           // Activity level options
           ListView.separated(
@@ -84,7 +84,7 @@ class StepActivityLevel extends StatelessWidget {
               );
             },
             separatorBuilder:
-                (context, index) => SizedBox(height: AppSpacing.md),
+                (context, index) => SizedBox(height: AppSpacing.sm),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porsiku/view/main/result.dart';
 import 'package:porsiku/constants/constants.dart';
+import 'package:porsiku/components/premium_dialog.dart';
 
 class TextInputPage extends StatefulWidget {
   const TextInputPage({super.key});
@@ -171,21 +172,9 @@ class _TextInputPageState extends State<TextInputPage>
         );
         if (allUnknown) {
           HapticFeedback.mediumImpact();
-          showDialog(
-            context: context,
-            builder:
-                (context) => AlertDialog(
-                  title: const Text("Tidak ada makanan yang terdeteksi"),
-                  content: const Text(
-                    "Silakan masukkan makanan yang valid atau coba lagi.",
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text("Input Ulang"),
-                    ),
-                  ],
-                ),
+          await PremiumDialog.showNoFoodDetected(
+            context,
+            retryText: "Input Ulang",
           );
           setState(() => isLoading = false);
           return;

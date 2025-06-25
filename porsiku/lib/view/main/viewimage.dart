@@ -8,6 +8,7 @@ import 'result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:porsiku/constants/constants.dart';
+import 'package:porsiku/components/premium_dialog.dart';
 
 class ViewImagePage extends StatefulWidget {
   final String imagePath;
@@ -176,24 +177,12 @@ class _ViewImagePageState extends State<ViewImagePage>
 
       if (allUnknown) {
         if (!mounted) return;
-        await showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text("Tidak ada makanan yang terdeteksi"),
-                content: const Text(
-                  "Silakan foto ulang makananmu untuk hasil yang lebih akurat.",
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // tutup dialog
-                      Navigator.of(context).pop(); // kembali ke kamera
-                    },
-                    child: const Text("Foto Ulang"),
-                  ),
-                ],
-              ),
+        await PremiumDialog.showNoFoodDetected(
+          context,
+          retryText: "Foto Ulang",
+          onRetry: () {
+            Navigator.of(context).pop(); // kembali ke kamera
+          },
         );
         return;
       }
@@ -213,6 +202,7 @@ class _ViewImagePageState extends State<ViewImagePage>
                 foodListText: foodListText,
                 nutritionResult: nutritionResult,
                 imagePath: widget.imagePath,
+                autoLog: false, // Disable auto-logging for immediate display
               ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
