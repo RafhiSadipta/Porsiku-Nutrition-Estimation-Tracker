@@ -4,11 +4,10 @@ import 'package:porsiku/components/title.dart';
 import 'package:porsiku/constants/constants.dart';
 import 'dart:convert';
 import 'package:porsiku/services/auth_service.dart';
-
-import 'signup.dart';
+import 'package:porsiku/view/onboarding/form.dart';
 import 'package:porsiku/components/input_field.dart';
-import 'package:porsiku/components/button.dart'; // Updated import
-import 'package:porsiku/view/main/dashboard.dart'; // Import DashboardPage
+import 'package:porsiku/components/button.dart';
+import 'package:porsiku/view/main/dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -274,7 +273,8 @@ class _LoginPageState extends State<LoginPage> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => const SignupPage(),
+                                builder:
+                                    (context) => const OnboardingFormPage(),
                               ),
                             );
                           },

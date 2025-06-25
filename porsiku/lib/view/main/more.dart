@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porsiku/constants/constants.dart';
-import 'package:porsiku/view/authentication/login.dart';
+import 'package:porsiku/view/onboarding/landing.dart';
+import 'package:porsiku/view/main/savedmeal.dart';
+import 'package:porsiku/view/main/profile.dart';
 
 class MorePage extends StatefulWidget {
   const MorePage({super.key});
@@ -71,7 +73,7 @@ class _MorePageState extends State<MorePage> with TickerProviderStateMixin {
       Navigator.of(context).pushAndRemoveUntil(
         PageRouteBuilder(
           pageBuilder:
-              (context, animation, secondaryAnimation) => const LoginPage(),
+              (context, animation, secondaryAnimation) => const LandingPage(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
               position: Tween<Offset>(
@@ -352,13 +354,12 @@ class _MorePageState extends State<MorePage> with TickerProviderStateMixin {
             'icon': Icons.person_outline_rounded,
             'title': 'Profile',
             'subtitle': 'Edit your personal information',
-            'onTap': () => _showComingSoonDialog('Profile Settings'),
-          },
-          {
-            'icon': Icons.security_rounded,
-            'title': 'Privacy & Security',
-            'subtitle': 'Control your privacy settings',
-            'onTap': () => _showComingSoonDialog('Privacy Settings'),
+            'onTap': () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              );
+            },
           },
         ],
       },
@@ -369,7 +370,12 @@ class _MorePageState extends State<MorePage> with TickerProviderStateMixin {
             'icon': Icons.bookmark_outline_rounded,
             'title': 'Saved Meals',
             'subtitle': 'View and manage your saved meals',
-            'onTap': () => _showComingSoonDialog('Saved Meals'),
+            'onTap': () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SavedMealsPage()),
+              );
+            },
           },
           {
             'icon': Icons.favorite_outline_rounded,
