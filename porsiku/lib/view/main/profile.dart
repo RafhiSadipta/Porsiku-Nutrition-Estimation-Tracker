@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../constants/constants.dart';
+import '../../components/input_field.dart';
+import '../../components/button.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -43,11 +47,34 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _showSnackbar(String message, {bool success = false}) async {
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: success ? Colors.green : Colors.red,
-        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Icon(
+              success ? Icons.check_circle_rounded : Icons.error_rounded,
+              color: AppColors.white,
+              size: 20,
+            ),
+            SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                message,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: success ? AppColors.success : AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.md),
+        ),
+        margin: EdgeInsets.all(AppSpacing.md),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -55,7 +82,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _updateUsername() async {
     if (_usernameController.text.trim().isEmpty) {
       setState(() {
-        errorMessage = 'Username tidak boleh kosong.';
+        errorMessage = 'Username cannot be empty.';
       });
       _showSnackbar(errorMessage!);
       _usernameFocus.requestFocus();
@@ -89,14 +116,15 @@ class _ProfilePageState extends State<ProfilePage> {
       );
       if (response.statusCode == 200) {
         setState(() {
-          successMessage = 'Username berhasil diupdate!';
+          successMessage = 'Username successfully updated!';
         });
         prefs.setString('username', _usernameController.text.trim());
         _showSnackbar(successMessage!, success: true);
       } else {
         final resp = jsonDecode(response.body);
         setState(() {
-          errorMessage = resp['error']?.toString() ?? 'Gagal update username.';
+          errorMessage =
+              resp['error']?.toString() ?? 'Failed to update username.';
         });
         _showSnackbar(errorMessage!);
       }
@@ -117,7 +145,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _newPasswordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty) {
       setState(() {
-        errorMessage = 'Semua field password harus diisi.';
+        errorMessage = 'All password fields must be filled.';
       });
       _showSnackbar(errorMessage!);
       _newPasswordFocus.requestFocus();
@@ -125,7 +153,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     if (_newPasswordController.text != _confirmPasswordController.text) {
       setState(() {
-        errorMessage = 'Konfirmasi password baru tidak cocok.';
+        errorMessage = 'New password confirmation does not match.';
       });
       _showSnackbar(errorMessage!);
       _newPasswordFocus.requestFocus();
@@ -133,7 +161,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     if (_oldPasswordController.text == _newPasswordController.text) {
       setState(() {
-        errorMessage = 'Password baru tidak boleh sama dengan password lama.';
+        errorMessage = 'New password cannot be the same as old password.';
       });
       _showSnackbar(errorMessage!);
       _newPasswordFocus.requestFocus();
@@ -170,7 +198,7 @@ class _ProfilePageState extends State<ProfilePage> {
       );
       if (response.statusCode == 200) {
         setState(() {
-          successMessage = 'Password berhasil diupdate!';
+          successMessage = 'Password successfully updated!';
         });
         _oldPasswordController.clear();
         _newPasswordController.clear();
@@ -179,7 +207,8 @@ class _ProfilePageState extends State<ProfilePage> {
       } else {
         final resp = jsonDecode(response.body);
         setState(() {
-          errorMessage = resp['error']?.toString() ?? 'Gagal update password.';
+          errorMessage =
+              resp['error']?.toString() ?? 'Failed to update password.';
         });
         _showSnackbar(errorMessage!);
       }
@@ -209,180 +238,302 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textOnPrimary,
-        elevation: 0,
-      ),
       backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        child: Center(
-          child: Card(
-            elevation: AppElevations.md,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-            ),
-            color: AppColors.surface,
-            child: Padding(
-              padding: AppCards.paddingLarge,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Premium Header
+            Container(
+              padding: EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withOpacity(0.05),
+                    AppColors.primaryLight.withOpacity(0.02),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Row(
                 children: [
-                  SizedBox(height: AppSpacing.md),
-                  Text('Ganti Username', style: AppTextStyles.h3),
-                  SizedBox(height: AppSpacing.sm),
-                  TextField(
-                    controller: _usernameController,
-                    focusNode: _usernameFocus,
-                    style: AppTextStyles.bodyLarge,
-                    decoration: InputDecoration(
-                      labelText: 'Username',
-                      labelStyle: AppTextStyles.label,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(color: AppColors.primary),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: AppInputs.padding,
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.sm),
+                  // Back Button
                   ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.textOnPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
-                      ),
-                      padding: AppButtons.padding,
-                      elevation: AppElevations.sm,
-                    ),
-                    onPressed: isLoading ? null : _updateUsername,
-                    child:
-                        isLoading
-                            ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.textOnPrimary,
-                              ),
-                            )
-                            : Text(
-                              'Update Username',
-                              style: AppTextStyles.primaryButton,
-                            ),
-                  ),
-                  SizedBox(height: AppSpacing.lg),
-                  Text('Ganti Password', style: AppTextStyles.h3),
-                  SizedBox(height: AppSpacing.sm),
-                  TextField(
-                    controller: _oldPasswordController,
-                    obscureText: true,
-                    style: AppTextStyles.bodyLarge,
-                    decoration: InputDecoration(
-                      labelText: 'Password Lama',
-                      labelStyle: AppTextStyles.label,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(color: AppColors.primary),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.white,
+                          foregroundColor: AppColors.black,
+                          minimumSize: const Size(40, 40),
+                          maximumSize: const Size(40, 40),
+                          padding: EdgeInsets.zero,
+                          shape: const CircleBorder(),
+                          elevation: 2,
+                          shadowColor: AppColors.black.withOpacity(0.1),
                         ),
-                      ),
-                      contentPadding: AppInputs.padding,
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  TextField(
-                    controller: _newPasswordController,
-                    focusNode: _newPasswordFocus,
-                    obscureText: true,
-                    style: AppTextStyles.bodyLarge,
-                    decoration: InputDecoration(
-                      labelText: 'Password Baru',
-                      labelStyle: AppTextStyles.label,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(color: AppColors.primary),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.black,
+                          size: 18,
                         ),
-                      ),
-                      contentPadding: AppInputs.padding,
+                      )
+                      .animate()
+                      .fadeIn(delay: 100.ms)
+                      .scale(begin: const Offset(0.8, 0.8)),
+
+                  // Title Section
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'My Profile',
+                          style: AppTextStyles.h3.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.3),
+                      ],
                     ),
                   ),
-                  SizedBox(height: AppSpacing.sm),
-                  TextField(
-                    controller: _confirmPasswordController,
-                    obscureText: true,
-                    style: AppTextStyles.bodyLarge,
-                    decoration: InputDecoration(
-                      labelText: 'Konfirmasi Password Baru',
-                      labelStyle: AppTextStyles.label,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(color: AppColors.primary),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: AppInputs.padding,
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.textOnPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
-                      ),
-                      padding: AppButtons.padding,
-                      elevation: AppElevations.sm,
-                    ),
-                    onPressed: isLoading ? null : _updatePassword,
-                    child:
-                        isLoading
-                            ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.textOnPrimary,
-                              ),
-                            )
-                            : Text(
-                              'Update Password',
-                              style: AppTextStyles.primaryButton,
-                            ),
-                  ),
-                  SizedBox(height: AppSpacing.md),
-                  // Feedback text is now handled by snackbar
+
+                  // Invisible spacer to balance the back button
+                  SizedBox(width: 40, height: 40),
                 ],
               ),
             ),
-          ),
+
+            // Main Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  children: [
+                    // Username Section Card
+                    Container(
+                      padding: EdgeInsets.all(AppSpacing.xl),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                        boxShadow: AppShadows.card,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Section Header
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(AppSpacing.sm),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(
+                                    AppBorderRadius.md,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.person_outline_rounded,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                              ),
+                              SizedBox(width: AppSpacing.md),
+                              Text(
+                                'Change Username',
+                                style: AppTextStyles.h4.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: AppSpacing.lg),
+
+                          // Username Input
+                          InputField(
+                            controller: _usernameController,
+                            labelText: 'Username',
+                            hintText: 'Enter new username',
+                            prefixIcon: Icon(
+                              Icons.alternate_email_rounded,
+                              color: AppColors.grey,
+                              size: 20,
+                            ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted:
+                                (_) => !isLoading ? _updateUsername() : null,
+                          ),
+
+                          SizedBox(height: AppSpacing.lg),
+
+                          // Update Username Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: Button(
+                              text:
+                                  isLoading ? 'Updating...' : 'Update Username',
+                              variant: ButtonVariant.primary,
+                              onPressed: isLoading ? null : _updateUsername,
+                              isActive: !isLoading,
+                              icon:
+                                  isLoading
+                                      ? SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                AppColors.white,
+                                              ),
+                                        ),
+                                      )
+                                      : Icon(
+                                        Icons.save_rounded,
+                                        size: 18,
+                                        color: AppColors.white,
+                                      ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.3),
+
+                    SizedBox(height: AppSpacing.xl),
+
+                    // Password Section Card
+                    Container(
+                      padding: EdgeInsets.all(AppSpacing.xl),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                        boxShadow: AppShadows.card,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Section Header
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(AppSpacing.sm),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(
+                                    AppBorderRadius.md,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.lock_outline_rounded,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                              ),
+                              SizedBox(width: AppSpacing.md),
+                              Text(
+                                'Change Password',
+                                style: AppTextStyles.h4.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: AppSpacing.lg),
+
+                          // Old Password Input
+                          InputField(
+                            controller: _oldPasswordController,
+                            labelText: 'Old Password',
+                            hintText: 'Enter old password',
+                            isPassword: true,
+                            prefixIcon: Icon(
+                              Icons.lock_open_rounded,
+                              color: AppColors.grey,
+                              size: 20,
+                            ),
+                            textInputAction: TextInputAction.next,
+                          ),
+
+                          SizedBox(height: AppSpacing.sm),
+
+                          // New Password Input
+                          InputField(
+                            controller: _newPasswordController,
+                            labelText: 'New Password',
+                            hintText: 'Enter new password',
+                            isPassword: true,
+                            prefixIcon: Icon(
+                              Icons.lock_rounded,
+                              color: AppColors.grey,
+                              size: 20,
+                            ),
+                            textInputAction: TextInputAction.next,
+                          ),
+
+                          SizedBox(height: AppSpacing.sm),
+
+                          // Confirm Password Input
+                          InputField(
+                            controller: _confirmPasswordController,
+                            labelText: 'Confirm Password',
+                            hintText: 'Confirm new password',
+                            isPassword: true,
+                            prefixIcon: Icon(
+                              Icons.lock_reset_rounded,
+                              color: AppColors.grey,
+                              size: 20,
+                            ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted:
+                                (_) => !isLoading ? _updatePassword() : null,
+                          ),
+
+                          SizedBox(height: AppSpacing.lg),
+
+                          // Update Password Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: Button(
+                              text:
+                                  isLoading ? 'Updating...' : 'Update Password',
+                              variant: ButtonVariant.primary,
+                              onPressed: isLoading ? null : _updatePassword,
+                              isActive: !isLoading,
+                              icon:
+                                  isLoading
+                                      ? SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                AppColors.white,
+                                              ),
+                                        ),
+                                      )
+                                      : Icon(
+                                        Icons.security_rounded,
+                                        size: 18,
+                                        color: AppColors.white,
+                                      ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.3),
+
+                    SizedBox(height: AppSpacing.md),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -956,8 +956,12 @@ class _DashboardPageState extends State<DashboardPage>
             Container(
                   padding: EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
-                    gradient: AppGradients.subtle,
+                    color: AppColors.primary.withOpacity(0.3),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.7),
+                      width: 1,
+                    ),
                   ),
                   child: Icon(
                     Icons.restaurant_menu,
@@ -1225,10 +1229,6 @@ class _DashboardPageState extends State<DashboardPage>
           return Container(
             width: 60,
             height: 60,
-            decoration: BoxDecoration(
-              color: AppColors.lightGrey,
-              borderRadius: BorderRadius.circular(AppBorderRadius.sm),
-            ),
             child: Center(
               child: SizedBox(
                 width: 20,
@@ -1261,10 +1261,15 @@ class _DashboardPageState extends State<DashboardPage>
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        gradient: AppGradients.subtle,
+        color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
       ),
-      child: Icon(Icons.restaurant, color: AppColors.white, size: AppIcons.md),
+      child: Icon(
+        Icons.restaurant_menu_rounded,
+        color: AppColors.primary,
+        size: 20,
+      ),
     );
   }
 
@@ -1634,6 +1639,9 @@ class _DashboardPageState extends State<DashboardPage>
                         children: [
                           // Enhanced greeting text with typewriter effect
                           AnimatedTextKit(
+                            key: ValueKey(
+                              greeting,
+                            ), // Force recreation when greeting changes
                             animatedTexts: [
                               TypewriterAnimatedText(
                                 greeting,

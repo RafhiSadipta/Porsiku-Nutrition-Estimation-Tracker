@@ -122,12 +122,6 @@ class _ViewImagePageState extends State<ViewImagePage>
       var foodListText = response.body;
       if (foodListText.isEmpty) throw Exception('No food detected in image');
 
-      // Show progress feedback
-      _showEnhancedMessage(
-        'Food detected! Calculating nutrition...',
-        isSuccess: true,
-      );
-
       // 2. Send food list to /api/nutri-estimation
       var nutriResponse = await http
           .post(
@@ -186,6 +180,12 @@ class _ViewImagePageState extends State<ViewImagePage>
         );
         return;
       }
+
+      // Show progress feedback (moved here after unknown food check)
+      _showEnhancedMessage(
+        'Food detected! Calculating nutrition...',
+        isSuccess: true,
+      );
 
       // Show success feedback
       _showEnhancedMessage(
